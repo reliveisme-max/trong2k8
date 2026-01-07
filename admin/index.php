@@ -1,21 +1,33 @@
 <?php
-// admin/index.php - UPDATE V9: FLAT UI & MINIMAL BADGES
+// admin/index.php - V10: ROLE BASED VIEW + AUTHOR + NOTE
 require_once 'auth.php';
 require_once '../includes/config.php';
 require_once '../includes/functions.php';
 
-// --- 1. XỬ LÝ XÓA NHIỀU ---
+$current_role = $_SESSION['role'] ?? 0; // 1: Boss, 0: QTV
+$current_id   = $_SESSION['admin_id'];
+
+// --- 1. XỬ LÝ XÓA NHIỀU (CÓ CHECK QUYỀN) ---
 if (isset($_POST['btn_delete_multi']) && !empty($_POST['selected_ids'])) {
     $ids = $_POST['selected_ids'];
     $countDeleted = 0;
 
     foreach ($ids as $id) {
         $id = (int)$id;
-        $stmt = $conn->prepare("SELECT thumb, gallery FROM products WHERE id = :id");
+
+        // [BẢO MẬT] Nếu là QTV, chỉ cho xóa acc của chính mình
+        $sqlCheck = "SELECT thumb, gallery, user_id FROM products WHERE id = :id";
+        $stmt = $conn->prepare($sqlCheck);
         $stmt->execute([':id' => $id]);
         $prod = $stmt->fetch();
 
         if ($prod) {
+            // Nếu là QTV mà user_id không khớp -> Bỏ qua
+            if ($current_role == 0 && $prod['user_id'] != $current_id) {
+                continue;
+            }
+
+            // Xóa ảnh
             if (!empty($prod['thumb']) && file_exists("../uploads/" . $prod['thumb'])) {
                 @unlink("../uploads/" . $prod['thumb']);
             }
@@ -25,6 +37,7 @@ if (isset($_POST['btn_delete_multi']) && !empty($_POST['selected_ids'])) {
                     if (file_exists("../uploads/" . $g)) @unlink("../uploads/" . $g);
                 }
             }
+            // Xóa DB
             $conn->prepare("DELETE FROM products WHERE id = :id")->execute([':id' => $id]);
             $countDeleted++;
         }
@@ -33,7 +46,7 @@ if (isset($_POST['btn_delete_multi']) && !empty($_POST['selected_ids'])) {
     exit;
 }
 
-// --- 2. LỌC & TÌM KIẾM ---
+// --- 2. LỌC & TÌM KIẾM & PHÂN QUYỀN ---
 $viewType = isset($_GET['type']) ? $_GET['type'] : '';
 $keyword  = isset($_GET['q']) ? trim($_GET['q']) : '';
 $page     = isset($_GET['page']) ? (int)$_GET['page'] : 1;
@@ -43,35 +56,65 @@ $offset   = ($page - 1) * $limit;
 $whereArr = [];
 $params = [];
 
+// A. PHÂN QUYỀN: Nếu là QTV, chỉ hiện acc của mình
+if ($current_role == 0) {
+    $whereArr[] = "p.user_id = :uid";
+    $params[':uid'] = $current_id;
+}
+
+// B. BỘ LỌC CŨ
 if ($viewType === 'sell') {
-    $whereArr[] = "price > 0";
+    $whereArr[] = "p.price > 0";
 } elseif ($viewType === 'rent') {
-    $whereArr[] = "price_rent > 0";
+    $whereArr[] = "p.price_rent > 0";
 }
 
 if ($keyword) {
-    $whereArr[] = "(title LIKE :kw OR id = :id)";
+    $whereArr[] = "(p.title LIKE :kw OR p.id = :id)";
     $params[':kw'] = "%$keyword%";
     $params[':id'] = (int)$keyword;
 }
 
 $whereSql = !empty($whereArr) ? "WHERE " . implode(" AND ", $whereArr) : "";
 
-$stmtCount = $conn->prepare("SELECT COUNT(*) FROM products $whereSql");
+// C. TRUY VẤN (JOIN VỚI BẢNG ADMINS ĐỂ LẤY TÊN NGƯỜI ĐĂNG)
+$sqlCount = "SELECT COUNT(*) FROM products p $whereSql";
+$stmtCount = $conn->prepare($sqlCount);
 $stmtCount->execute($params);
 $totalRecords = $stmtCount->fetchColumn();
 $totalPages = ceil($totalRecords / $limit);
 
-$sql = "SELECT * FROM products $whereSql ORDER BY id DESC LIMIT $limit OFFSET $offset";
+$sql = "SELECT p.*, a.username as author_name, a.prefix 
+        FROM products p 
+        LEFT JOIN admins a ON p.user_id = a.id 
+        $whereSql 
+        ORDER BY p.id DESC LIMIT $limit OFFSET $offset";
+
 $stmt = $conn->prepare($sql);
 foreach ($params as $key => $val) $stmt->bindValue($key, $val);
 $stmt->execute();
 $products = $stmt->fetchAll();
 
-// Thống kê nhanh
-$totalAcc = $conn->query("SELECT COUNT(*) FROM products")->fetchColumn();
-$countSale = $conn->query("SELECT COUNT(*) FROM products WHERE price > 0")->fetchColumn();
-$countRent = $conn->query("SELECT COUNT(*) FROM products WHERE price_rent > 0")->fetchColumn();
+// Thống kê nhanh (Cũng phải phân quyền)
+if ($current_role == 1) {
+    // Boss thấy tổng toàn sàn
+    $totalAcc = $conn->query("SELECT COUNT(*) FROM products")->fetchColumn();
+    $countSale = $conn->query("SELECT COUNT(*) FROM products WHERE price > 0")->fetchColumn();
+    $countRent = $conn->query("SELECT COUNT(*) FROM products WHERE price_rent > 0")->fetchColumn();
+} else {
+    // QTV thấy tổng của mình
+    $stmtStat = $conn->prepare("SELECT COUNT(*) FROM products WHERE user_id = ?");
+    $stmtStat->execute([$current_id]);
+    $totalAcc = $stmtStat->fetchColumn();
+
+    $stmtStat = $conn->prepare("SELECT COUNT(*) FROM products WHERE user_id = ? AND price > 0");
+    $stmtStat->execute([$current_id]);
+    $countSale = $stmtStat->fetchColumn();
+
+    $stmtStat = $conn->prepare("SELECT COUNT(*) FROM products WHERE user_id = ? AND price_rent > 0");
+    $stmtStat->execute([$current_id]);
+    $countRent = $stmtStat->fetchColumn();
+}
 ?>
 
 <!DOCTYPE html>
@@ -85,24 +128,30 @@ $countRent = $conn->query("SELECT COUNT(*) FROM products WHERE price_rent > 0")-
     <script src="https://unpkg.com/@phosphor-icons/web"></script>
     <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&display=swap"
         rel="stylesheet">
-
-    <!-- Cache Busting để đảm bảo load CSS mới -->
-    <link rel="stylesheet" href="assets/css/dashboard.css?v=<?= time() . rand(10, 99) ?>">
-    <link rel="stylesheet" href="assets/css/admin.css?v=<?= time() . rand(10, 99) ?>">
+    <link rel="stylesheet" href="assets/css/dashboard.css?v=<?= time() ?>">
+    <link rel="stylesheet" href="assets/css/admin.css?v=<?= time() ?>">
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 </head>
 
 <body>
 
     <aside class="sidebar">
-        <div class="brand"><i class="ph-fill ph-heart"></i> ADMIN PANEL</div>
+        <div class="brand">
+            <?php if ($current_role == 1): ?>
+            <i class="ph-fill ph-crown"></i> BOSS PANEL
+            <?php else: ?>
+            <i class="ph-fill ph-user-circle"></i> STAFF PANEL
+            <?php endif; ?>
+        </div>
         <nav class="d-flex flex-column gap-2">
             <a href="index.php" class="menu-item active"><i class="ph-duotone ph-squares-four"></i> Tổng Quan</a>
             <a href="add.php" class="menu-item"><i class="ph-duotone ph-plus-circle"></i> Đăng Acc Mới</a>
             <a href="library.php" class="menu-item"><i class="ph-duotone ph-image"></i> Thư viện ảnh</a>
+            <?php if ($current_role == 1): ?>
+            <a href="users.php" class="menu-item"><i class="ph-duotone ph-users"></i> Nhân viên</a>
+            <?php endif; ?>
             <a href="change_pass.php" class="menu-item"><i class="ph-duotone ph-lock-key"></i> Đổi mật khẩu</a>
             <div class="mt-auto">
-                <div class="border-top border-secondary opacity-25 mb-3"></div>
                 <a href="logout.php" class="menu-item text-danger fw-bold"><i class="ph-duotone ph-sign-out"></i> Đăng
                     xuất</a>
             </div>
@@ -114,6 +163,9 @@ $countRent = $conn->query("SELECT COUNT(*) FROM products WHERE price_rent > 0")-
 
             <div class="top-header">
                 <h4 class="m-0 text-dark">Quản lý sản phẩm</h4>
+                <?php if ($current_role == 0): ?>
+                <span class="badge bg-success ms-2">QTV: <?= $_SESSION['prefix'] ?></span>
+                <?php endif; ?>
             </div>
 
             <!-- THỐNG KÊ -->
@@ -188,12 +240,14 @@ $countRent = $conn->query("SELECT COUNT(*) FROM products WHERE price_rent > 0")-
                         <table class="table align-middle table-hover">
                             <thead>
                                 <tr>
-                                    <th class="ps-4" width="40">
-                                        <input type="checkbox" class="form-check-input" onclick="toggleAll(this)">
-                                    </th>
+                                    <th class="ps-4" width="40"><input type="checkbox" class="form-check-input"
+                                            onclick="toggleAll(this)"></th>
                                     <th width="80">Ảnh</th>
                                     <th>Thông tin Acc</th>
                                     <th>Giá tiền</th>
+                                    <?php if ($current_role == 1): ?>
+                                    <th>Người đăng</th>
+                                    <?php endif; ?>
                                     <th>Trạng thái</th>
                                     <th class="text-end pe-4">Thao tác</th>
                                 </tr>
@@ -208,18 +262,24 @@ $countRent = $conn->query("SELECT COUNT(*) FROM products WHERE price_rent > 0")-
                                     <td><img src="../uploads/<?= $p['thumb'] ?>" class="thumb-img" loading="lazy"></td>
                                     <td>
                                         <div class="fw-bold text-dark">#<?= $p['id'] ?> - <?= $p['title'] ?></div>
+
+                                        <!-- HIỆN GHI CHÚ NỘI BỘ -->
+                                        <?php if (!empty($p['private_note'])): ?>
+                                        <div class="mt-1 text-secondary fst-italic"
+                                            style="font-size: 12px; background: #fffbeb; padding: 4px 8px; border-radius: 4px; border: 1px dashed #fcd34d; display: inline-block;">
+                                            <i class="ph-fill ph-note-pencil text-warning"></i>
+                                            <?= htmlspecialchars($p['private_note']) ?>
+                                        </div>
+                                        <?php endif; ?>
+
                                         <div class="d-flex gap-2 mt-2">
-                                            <!-- FLAT BADGES -->
-                                            <?php if ($p['price'] > 0): ?>
-                                            <span class="badge-soft badge-sell">BÁN</span>
-                                            <?php endif; ?>
-                                            <?php if ($p['price_rent'] > 0): ?>
-                                            <span class="badge-soft badge-rent">THUÊ</span>
-                                            <?php endif; ?>
+                                            <?php if ($p['price'] > 0): ?><span
+                                                class="badge-soft badge-sell">BÁN</span><?php endif; ?>
+                                            <?php if ($p['price_rent'] > 0): ?><span
+                                                class="badge-soft badge-rent">THUÊ</span><?php endif; ?>
                                         </div>
                                     </td>
                                     <td>
-                                        <!-- FLAT PRICE STYLE -->
                                         <?php if ($p['price'] > 0): ?>
                                         <div class="price-display-sell"><?= formatPrice($p['price']) ?></div>
                                         <?php endif; ?>
@@ -229,6 +289,21 @@ $countRent = $conn->query("SELECT COUNT(*) FROM products WHERE price_rent > 0")-
                                         </div>
                                         <?php endif; ?>
                                     </td>
+
+                                    <!-- CỘT NGƯỜI ĐĂNG (CHỈ BOSS THẤY) -->
+                                    <?php if ($current_role == 1): ?>
+                                    <td>
+                                        <?php if ($p['author_name']): ?>
+                                        <div class="fw-bold text-primary"><?= $p['author_name'] ?></div>
+                                        <?php if ($p['prefix']): ?>
+                                        <small class="text-secondary">(<?= $p['prefix'] ?>)</small>
+                                        <?php endif; ?>
+                                        <?php else: ?>
+                                        <span class="text-muted">Ẩn danh</span>
+                                        <?php endif; ?>
+                                    </td>
+                                    <?php endif; ?>
+
                                     <td>
                                         <?= $p['status'] == 1
                                                 ? '<span class="badge-soft badge-status-active">Đang bán</span>'
@@ -247,7 +322,7 @@ $countRent = $conn->query("SELECT COUNT(*) FROM products WHERE price_rent > 0")-
                                 <?php endforeach; ?>
                                 <?php if (empty($products)): ?>
                                 <tr>
-                                    <td colspan="6" class="text-center py-5 text-secondary">Không tìm thấy dữ liệu</td>
+                                    <td colspan="7" class="text-center py-5 text-secondary">Không tìm thấy dữ liệu</td>
                                 </tr>
                                 <?php endif; ?>
                             </tbody>
@@ -275,6 +350,7 @@ $countRent = $conn->query("SELECT COUNT(*) FROM products WHERE price_rent > 0")-
         </div>
     </main>
 
+    <!-- MOBILE NAV -->
     <div class="bottom-nav">
         <a href="index.php" class="nav-item active"><i class="ph-duotone ph-squares-four"></i></a>
         <a href="add.php" class="nav-item">

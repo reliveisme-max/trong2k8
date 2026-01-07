@@ -1,5 +1,5 @@
 <?php
-// admin/login.php - LIGHT MODE + SHOW/HIDE PASSWORD
+// admin/login.php - UPDATE V2: LƯU QUYỀN VÀ PREFIX
 session_start();
 require_once '../includes/config.php';
 
@@ -22,9 +22,14 @@ if (isset($_POST['btn_login'])) {
         $user = $stmt->fetch();
 
         if ($user && password_verify($password, $user['password'])) {
+            // Đăng nhập thành công -> Lưu Session
             $_SESSION['is_admin_logged_in'] = true;
             $_SESSION['admin_id'] = $user['id'];
             $_SESSION['admin_user'] = $user['username'];
+
+            // [MỚI] Lưu quyền hạn và Prefix
+            $_SESSION['role'] = $user['role'];     // 1: Boss, 0: QTV
+            $_SESSION['prefix'] = $user['prefix']; // Mã riêng (Ví dụ: NAM)
 
             header("Location: index.php");
             exit;
@@ -53,7 +58,6 @@ if (isset($_POST['btn_login'])) {
     <style>
     body {
         background-color: #f3f4f6;
-        /* Nền xám sáng */
         font-family: 'Manrope', sans-serif;
         height: 100vh;
         display: flex;
@@ -68,7 +72,6 @@ if (isset($_POST['btn_login'])) {
         width: 100%;
         max-width: 420px;
         box-shadow: 0 10px 40px rgba(0, 0, 0, 0.08);
-        /* Bóng đổ nhẹ */
         border: 1px solid #e5e7eb;
     }
 

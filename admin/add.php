@@ -1,7 +1,11 @@
 <?php
-// admin/add.php - V7: COLLAPSIBLE UI
+// admin/add.php - V8: AUTO PREFIX FOR QTV + PRIVATE NOTE
 require_once 'auth.php';
 require_once '../includes/config.php';
+
+// Lấy thông tin người đang đăng nhập
+$role = $_SESSION['role'] ?? 0; // 1: Boss, 0: QTV
+$prefix = $_SESSION['prefix'] ?? ''; // Ví dụ: NAM
 ?>
 <!DOCTYPE html>
 <html lang="vi">
@@ -17,8 +21,8 @@ require_once '../includes/config.php';
     <script src="https://cdnjs.cloudflare.com/ajax/libs/Sortable/1.15.0/Sortable.min.js"></script>
 
     <!-- Cache Busting -->
-    <link rel="stylesheet" href="assets/css/dashboard.css?v=<?= time() . rand(10, 99) ?>">
-    <link rel="stylesheet" href="assets/css/admin.css?v=<?= time() . rand(10, 99) ?>">
+    <link rel="stylesheet" href="assets/css/dashboard.css?v=<?= time() ?>">
+    <link rel="stylesheet" href="assets/css/admin.css?v=<?= time() ?>">
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 </head>
 
@@ -26,14 +30,22 @@ require_once '../includes/config.php';
 
     <!-- SIDEBAR -->
     <aside class="sidebar">
-        <div class="brand"><i class="ph-fill ph-heart"></i> ADMIN PANEL</div>
+        <div class="brand">
+            <?php if ($role == 1): ?>
+            <i class="ph-fill ph-crown"></i> BOSS PANEL
+            <?php else: ?>
+            <i class="ph-fill ph-user-circle"></i> STAFF PANEL
+            <?php endif; ?>
+        </div>
         <nav class="d-flex flex-column gap-2">
             <a href="index.php" class="menu-item"><i class="ph-duotone ph-squares-four"></i> Tổng Quan</a>
             <a href="add.php" class="menu-item active"><i class="ph-duotone ph-plus-circle"></i> Đăng Acc Mới</a>
             <a href="library.php" class="menu-item"><i class="ph-duotone ph-image"></i> Thư viện ảnh</a>
+            <?php if ($role == 1): ?>
+            <a href="users.php" class="menu-item"><i class="ph-duotone ph-users"></i> Nhân viên</a>
+            <?php endif; ?>
             <a href="change_pass.php" class="menu-item"><i class="ph-duotone ph-lock-key"></i> Đổi mật khẩu</a>
             <div class="mt-auto">
-                <div class="border-top border-secondary opacity-25 mb-3"></div>
                 <a href="logout.php" class="menu-item text-danger fw-bold"><i class="ph-duotone ph-sign-out"></i> Đăng
                     xuất</a>
             </div>
@@ -57,15 +69,10 @@ require_once '../includes/config.php';
                     <div class="form-card sticky-top" style="top: 20px; z-index: 1;">
                         <label class="form-label fw-bold text-uppercase text-secondary" style="font-size: 12px;">Hình
                             ảnh sản phẩm</label>
-                        <div class="text-secondary small mb-3 fst-italic">
-                            <i class="ph-fill ph-info"></i> Ảnh đầu tiên là <b>Ảnh Bìa</b>. Kéo thả để sắp xếp.
-                        </div>
 
-                        <!-- Khu vực Upload -->
                         <div class="image-uploader-area" onclick="document.getElementById('fileInput').click()">
                             <i class="ph-duotone ph-cloud-arrow-up text-secondary" style="font-size: 48px;"></i>
                             <div class="fw-bold mt-2 text-dark">Tải ảnh lên</div>
-                            <div class="text-secondary small">Hỗ trợ nhiều ảnh cùng lúc</div>
                         </div>
 
                         <input type="file" id="fileInput" name="gallery[]" accept="image/*" multiple hidden>
@@ -77,26 +84,47 @@ require_once '../includes/config.php';
                                 <i class="ph-bold ph-image"></i> Chọn từ Thư viện
                             </button>
                         </div>
-                        
-                        <!-- [UPDATE] Lưới ảnh + Nút Thu gọn -->
+
                         <div id="imageGrid" class="sortable-grid"></div>
-                        
                         <button type="button" id="toggleGridBtn" class="btn-toggle-view d-none" onclick="toggleGrid()">
                             <i class="ph-bold ph-caret-down"></i> <span id="toggleText">Xem thêm ảnh</span>
                         </button>
-                        <!-- End Update -->
-
                     </div>
                 </div>
 
                 <!-- CỘT PHẢI: THÔNG TIN -->
                 <div class="col-12 col-lg-7 order-lg-1">
                     <div class="form-card">
+
+                        <!-- LOGIC MÃ ACC -->
                         <div class="mb-4">
                             <label class="form-label fw-bold">Mã Acc / Tiêu đề <span
                                     class="text-danger">*</span></label>
+
+                            <?php if ($role == 1): // BOSS: Nhập thoải mái 
+                            ?>
                             <input type="text" name="title" class="form-control custom-input"
-                                placeholder="Ví dụ: Acc VIP Rank Cao..." required>
+                                placeholder="Nhập mã số..." required>
+                            <?php else: // QTV: Tự động 
+                            ?>
+                            <div class="input-group">
+                                <span class="input-group-text bg-light fw-bold text-secondary">PREFIX:
+                                    <?= $prefix ?></span>
+                                <input type="text" class="form-control custom-input bg-white text-muted"
+                                    value="Hệ thống tự động tạo mã số" disabled>
+                                <input type="hidden" name="auto_prefix" value="1">
+                            </div>
+                            <small class="text-success fst-italic"><i class="ph-fill ph-check-circle"></i> Mã sẽ tự
+                                tăng: <?= $prefix ?>1, <?= $prefix ?>2...</small>
+                            <?php endif; ?>
+                        </div>
+
+                        <!-- GHI CHÚ NỘI BỘ (MỚI) -->
+                        <div class="mb-4">
+                            <label class="form-label fw-bold text-primary"><i class="ph-bold ph-lock-key"></i> Ghi chú
+                                nội bộ</label>
+                            <textarea name="private_note" class="form-control custom-input" rows="2"
+                                placeholder="Nhập giá vốn, nguồn nhập, thông tin login... (Khách không thấy)"></textarea>
                         </div>
 
                         <label class="form-label mb-3 fw-bold text-uppercase text-secondary"
@@ -105,21 +133,16 @@ require_once '../includes/config.php';
                         <!-- Switch Bán -->
                         <div class="mode-switch-group">
                             <div class="d-flex align-items-center gap-3">
-                                <div class="bg-warning bg-opacity-10 p-2 rounded-3 text-warning">
-                                    <i class="ph-fill ph-shopping-cart fs-4"></i>
-                                </div>
+                                <div class="bg-warning bg-opacity-10 p-2 rounded-3 text-warning"><i
+                                        class="ph-fill ph-shopping-cart fs-4"></i></div>
                                 <div>
                                     <div class="fw-bold text-dark">Bán Vĩnh Viễn</div>
-                                    <small class="text-secondary">Khách mua đứt acc này</small>
                                 </div>
                             </div>
-                            <div>
-                                <input class="custom-toggle" type="checkbox" id="switchSell" checked
-                                    onchange="toggleSections()">
-                            </div>
+                            <div><input class="custom-toggle" type="checkbox" id="switchSell" checked
+                                    onchange="toggleSections()"></div>
                         </div>
 
-                        <!-- Khu vực nhập giá Bán -->
                         <div id="sellSection" class="mb-4 ps-4 border-start border-4 border-warning">
                             <label class="label-highlight">Giá Bán (VNĐ)</label>
                             <div class="input-group">
@@ -133,21 +156,16 @@ require_once '../includes/config.php';
                         <!-- Switch Thuê -->
                         <div class="mode-switch-group">
                             <div class="d-flex align-items-center gap-3">
-                                <div class="bg-info bg-opacity-10 p-2 rounded-3 text-info">
-                                    <i class="ph-fill ph-clock-user fs-4"></i>
-                                </div>
+                                <div class="bg-info bg-opacity-10 p-2 rounded-3 text-info"><i
+                                        class="ph-fill ph-clock-user fs-4"></i></div>
                                 <div>
                                     <div class="fw-bold text-dark">Cho Thuê</div>
-                                    <small class="text-secondary">Khách thuê theo giờ/ngày</small>
                                 </div>
                             </div>
-                            <div>
-                                <input class="custom-toggle" type="checkbox" id="switchRent"
-                                    onchange="toggleSections()">
-                            </div>
+                            <div><input class="custom-toggle" type="checkbox" id="switchRent"
+                                    onchange="toggleSections()"></div>
                         </div>
 
-                        <!-- Khu vực nhập giá Thuê -->
                         <div id="rentSection" class="mb-4 ps-4 border-start border-4 border-info"
                             style="display: none;">
                             <label class="label-highlight" style="color:#0ea5e9;">Giá Thuê (VNĐ)</label>
@@ -163,7 +181,6 @@ require_once '../includes/config.php';
                                 </div>
                                 <div class="col-4">
                                     <select name="unit" class="form-select custom-input h-100 fw-bold">
-                                        <!-- <option value="1">/ Giờ</option> --> <!-- Đã ẩn -->
                                         <option value="2" selected>/ Ngày</option>
                                     </select>
                                 </div>
@@ -172,7 +189,7 @@ require_once '../includes/config.php';
 
                         <div class="d-grid gap-2 mt-5">
                             <button type="button" onclick="submitForm()" class="btn-submit">
-                                <i class="ph-bold ph-check-circle me-2"></i> ĐĂNG SẢN PHẨM NGAY
+                                <i class="ph-bold ph-check-circle me-2"></i> ĐĂNG NGAY
                             </button>
                         </div>
                     </div>
@@ -181,34 +198,6 @@ require_once '../includes/config.php';
         </form>
         <div style="height: 80px;"></div>
     </main>
-
-    <!-- LIBRARY MODAL -->
-    <div class="modal fade" id="libraryModal" tabindex="-1">
-        <div class="modal-dialog modal-dialog-centered modal-lg">
-            <div class="modal-content border-0 rounded-4 shadow-lg">
-                <div class="modal-header border-bottom">
-                    <h5 class="modal-title fw-bold">Thư viện ảnh</h5>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-                </div>
-                <div class="modal-body p-0">
-                    <div class="library-scroll-area" id="scrollArea" style="height: 500px; overflow-y: auto;">
-                        <div class="nft-grid-5 p-3" id="libGrid"></div>
-                        <div id="libLoading" class="text-center py-3 d-none">
-                            <div class="spinner-border text-warning spinner-border-sm" role="status"></div>
-                            <span class="ms-2 small text-muted">Đang tải thêm...</span>
-                        </div>
-                    </div>
-                </div>
-                <div class="modal-footer border-top bg-light">
-                    <div class="me-auto text-secondary small" id="selectedCount">Đã chọn: 0</div>
-                    <button type="button" class="btn btn-warning text-white fw-bold rounded-pill px-4"
-                        onclick="confirmLibrarySelection()">
-                        <i class="ph-bold ph-check"></i> Chọn ảnh
-                    </button>
-                </div>
-            </div>
-        </div>
-    </div>
 
     <!-- MOBILE NAV -->
     <div class="bottom-nav">
@@ -219,10 +208,9 @@ require_once '../includes/config.php';
         <a href="library.php" class="nav-item"><i class="ph-duotone ph-image"></i></a>
     </div>
 
+    <!-- Script giữ nguyên -->
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
-    
-    <!-- [UPDATE] Thêm timestamp để xóa cache JS -->
-    <script src="assets/js/admin-add.js?v=<?= time() . rand(100,999) ?>"></script>
+    <script src="assets/js/admin-add.js?v=<?= time() ?>"></script>
 </body>
 
 </html>

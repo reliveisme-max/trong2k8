@@ -1,7 +1,4 @@
-// admin/assets/js/admin-add.js - V20: PERFECT SORTING (UID MAPPING)
-// 1. Gửi kèm UID khi upload để Server map đúng tên file.
-// 2. Đảm bảo thứ tự ảnh 100% như người dùng sắp xếp.
-// 3. Vẫn giữ tính năng chia nhỏ (Chunk Upload) để đăng 100+ ảnh.
+// admin/assets/js/admin-add.js - V23: FIX INPUT BLOCKED (Allow typing k, m, tr)
 
 let fileStore = {}; 
 let sortable; 
@@ -11,7 +8,7 @@ let hasMore = true;
 let selectedLibFiles = []; 
 
 document.addEventListener('DOMContentLoaded', function () {
-    // 1. Khởi tạo Kéo thả
+    // 1. Khởi tạo Kéo thả ảnh
     const grid = document.getElementById('imageGrid');
     if (grid) {
         sortable = new Sortable(grid, { animation: 150, ghostClass: 'sortable-ghost' });
@@ -26,15 +23,30 @@ document.addEventListener('DOMContentLoaded', function () {
         });
     }
 
-    // 3. Khởi tạo Switch & Auto Parse
+    // 3. Khởi tạo Switch
     toggleSections();
+
+    // 4. Auto Parse Title
     const titleInput = document.querySelector('input[name="title"]');
     if (titleInput) {
         titleInput.addEventListener('change', function() { autoParseEverything(this.value); });
         titleInput.addEventListener('paste', function() { setTimeout(() => autoParseEverything(this.value), 50); });
     }
 
-    // 4. Scroll vô hạn thư viện
+    // 5. Smart Price (Xử lý khi rời khỏi ô nhập)
+    const priceInputs = document.querySelectorAll('input[name="price"], input[name="price_rent"]');
+    priceInputs.forEach(input => {
+        // Khi rời chuột ra ngoài thì mới tính toán 20m -> 20.000.000
+        input.addEventListener('blur', function() {
+            parsePriceShortcut(this);
+        });
+        // Enter cũng tính luôn
+        input.addEventListener('change', function() {
+            parsePriceShortcut(this);
+        });
+    });
+
+    // 6. Scroll vô hạn thư viện
     const scrollArea = document.getElementById('scrollArea');
     if (scrollArea) {
         scrollArea.addEventListener('scroll', () => {
@@ -46,7 +58,49 @@ document.addEventListener('DOMContentLoaded', function () {
 });
 
 // =========================================================
-// PHẦN 1: LOGIC UPLOAD CỐ ĐỊNH THỨ TỰ (UID MAPPING)
+// PHẦN 1: LOGIC SMART PRICE (XỬ LÝ 20m, 500k)
+// =========================================================
+function parsePriceShortcut(input) {
+    let val = input.value.toLowerCase().trim();
+    if (!val) return;
+
+    // Regex bắt các dạng: 20m, 1tr5, 500k
+    const regex = /^([0-9]+[.,]?[0-9]*)(k|m|tr)([0-9]*)$/;
+    const match = val.match(regex);
+
+    if (match) {
+        let mainNum = parseFloat(match[1].replace(',', '.'));
+        let unit = match[2];
+        let decimalPart = match[3];
+        let money = 0;
+
+        if (unit === 'k') {
+            money = mainNum * 1000;
+        } else if (unit === 'm' || unit === 'tr') {
+            money = mainNum * 1000000;
+            
+            if (decimalPart && decimalPart.length > 0) {
+                if (decimalPart.length === 1) money += parseInt(decimalPart) * 100000;
+                else if (decimalPart.length === 2) money += parseInt(decimalPart) * 10000;
+                else if (decimalPart.length === 3) money += parseInt(decimalPart) * 1000;
+            }
+        }
+
+        if (money > 0) {
+            input.value = money.toLocaleString('vi-VN').replace(/,/g, '.');
+        }
+    } else {
+        // Nếu không phải shortcut thì format lại dạng số chuẩn
+        // (Để xóa các ký tự rác nếu người dùng gõ sai)
+        let value = input.value.replace(/\D/g, '');
+        if (value !== '') {
+            input.value = value.replace(/\B(?=(\d{3})+(?!\d))/g, ".");
+        }
+    }
+}
+
+// =========================================================
+// PHẦN 2: LOGIC UPLOAD CỐ ĐỊNH THỨ TỰ (GIỮ NGUYÊN)
 // =========================================================
 
 async function submitForm() {
@@ -57,7 +111,6 @@ async function submitForm() {
     const isRent = document.getElementById('switchRent').checked;
     if (!isSell && !isRent) { Swal.fire('Lỗi', 'Chưa chọn chế độ Bán hoặc Thuê!', 'warning'); return; }
 
-    // Tính tổng số ảnh Local cần upload
     let localCount = 0;
     gridItems.forEach(item => { if(item.dataset.type === 'local') localCount++; });
 
@@ -70,47 +123,34 @@ async function submitForm() {
 
     try {
         const finalGalleryList = [];
-        
-        // 1. Lập bản đồ vị trí (Ordered Map)
-        // Mảng này giữ đúng thứ tự hiển thị trên màn hình
-        const orderedMap = []; // Chứa các object: { type, uid, filename }
-
-        const localUploadTasks = []; // Danh sách các item Local cần upload
+        const orderedMap = []; 
+        const localUploadTasks = []; 
 
         gridItems.forEach(item => {
             const type = item.dataset.type;
             const uid = item.dataset.id;
             
             if (type === 'local') {
-                // Tạo một slot trống, chờ điền filename sau khi upload xong
                 const mapItem = { type: 'local', uid: uid, filename: '' };
                 orderedMap.push(mapItem);
-                
-                // Đẩy vào danh sách cần upload
                 localUploadTasks.push({ uid: uid, mapItemRef: mapItem }); 
             } else {
-                // Ảnh thư viện thì có tên luôn rồi
                 orderedMap.push({ type: 'lib', uid: uid, filename: item.dataset.filename });
             }
         });
 
-        // 2. Upload ảnh Local theo từng đợt (Chunk Upload)
         if (localUploadTasks.length > 0) {
-            const CHUNK_SIZE = 10; // 10 ảnh mỗi lần gửi
-            
+            const CHUNK_SIZE = 10; 
             for (let i = 0; i < localUploadTasks.length; i += CHUNK_SIZE) {
                 const chunk = localUploadTasks.slice(i, i + CHUNK_SIZE);
                 const chunkFormData = new FormData();
                 
                 chunkFormData.append('ajax_upload_mode', '1');
 
-                // Nén và đưa vào FormData
                 const compressionPromises = chunk.map(async (task) => {
                     const file = fileStore[task.uid];
                     if (file) {
                         const compressed = await compressImage(file, 1200, 0.7);
-                        
-                        // [QUAN TRỌNG] Gửi kèm UID để Server biết ảnh này là ai
                         chunkFormData.append('chunk_files[]', compressed, compressed.name);
                         chunkFormData.append('chunk_uids[]', task.uid); 
                     }
@@ -118,37 +158,29 @@ async function submitForm() {
 
                 await Promise.all(compressionPromises);
 
-                // Gửi lên Server
                 const response = await fetch('process.php', { method: 'POST', body: chunkFormData });
                 const data = await response.json();
 
                 if (data.status === 'success') {
-                    // data.data là một Object dạng: { "uid_abc": "file_moi.webp", "uid_xyz": "file_kia.webp" }
                     const resultKeyMap = data.data;
-
-                    // Điền tên file vào đúng vị trí trong orderedMap dựa trên UID
                     chunk.forEach(task => {
                         const svFilename = resultKeyMap[task.uid];
                         if (svFilename) {
-                            // Cập nhật filename vào tham chiếu của orderedMap đã tạo ở bước 1
                             task.mapItemRef.filename = svFilename;
                         }
                     });
-
                 } else {
                     throw new Error('Upload thất bại. Vui lòng thử lại!');
                 }
             }
         }
 
-        // 3. Tạo danh sách cuối cùng từ orderedMap (lúc này đã điền đủ tên file)
         orderedMap.forEach(obj => {
             if (obj.filename) {
                 finalGalleryList.push(obj.filename);
             }
         });
 
-        // 4. Gửi Form cuối cùng
         const mainForm = document.getElementById('addForm');
         const mainFormData = new FormData(mainForm);
         mainFormData.delete('gallery[]'); 
@@ -173,7 +205,6 @@ async function submitForm() {
     }
 }
 
-// Hàm nén ảnh (Giữ nguyên)
 function compressImage(file, maxWidth, quality) {
     return new Promise((resolve) => {
         const reader = new FileReader();
@@ -203,7 +234,7 @@ function compressImage(file, maxWidth, quality) {
     });
 }
 
-// CÁC HÀM HỖ TRỢ KHÁC (GIỮ NGUYÊN)
+// CÁC HÀM HỖ TRỢ KHÁC
 function checkGridHeight() {
     const grid = document.getElementById('imageGrid');
     const btn = document.getElementById('toggleGridBtn');
@@ -404,7 +435,16 @@ function toggleSections() {
         if(rentSec) rentSec.style.display = switchRent.checked ? 'block' : 'none';
     }
 }
+
+// [QUAN TRỌNG] HÀM NÀY ĐÃ ĐƯỢC FIX ĐỂ KHÔNG CHẶN CHỮ k, m, tr
 function formatCurrency(input) {
+    // 1. Kiểm tra xem có ký tự shortcut không (k, m, t, r)
+    // Nếu có -> Không làm gì cả, để yên cho người dùng gõ
+    if (/[kmtr]/i.test(input.value)) {
+        return;
+    }
+
+    // 2. Nếu chỉ có số -> Format như cũ
     let value = input.value.replace(/\D/g, '');
     if (value === '') return;
     input.value = value.replace(/\B(?=(\d{3})+(?!\d))/g, ".");
