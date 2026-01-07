@@ -144,7 +144,7 @@ function toggleStar(el, id) {
     formData.append('action', 'toggle_featured');
     formData.append('id', id);
 
-    fetch('process.php', { method: 'POST', body: formData })
+    fetch('api/featured.php', { method: 'POST', body: formData })
     .then(res => res.json())
     .then(data => {
         if (data.status === 'success') {
@@ -178,7 +178,7 @@ function saveSortOrder() {
         formData.append('order[]', orderData[i]);
     }
 
-    fetch('process.php', { method: 'POST', body: formData })
+    fetch('api/featured.php', { method: 'POST', body: formData })
     .then(res => res.json())
     .then(data => {
         if (data.status === 'success') {

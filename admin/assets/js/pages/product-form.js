@@ -168,7 +168,7 @@ async function submitForm() {
                 await Promise.all(compressionPromises);
 
                 // Gửi về Server
-                const response = await fetch('process.php', { method: 'POST', body: chunkFormData });
+                const response = await fetch('api/upload.php', { method: 'POST', body: chunkFormData });
                 const data = await response.json();
 
                 if (data.status === 'success') {

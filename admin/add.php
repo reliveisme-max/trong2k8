@@ -1,10 +1,10 @@
 <?php
-// admin/add.php - LINKED WITH NEW JS
+// admin/add.php - UPDATE: CHO PHÉP NHÂN VIÊN NHẬP MÃ TÙY CHỌN HOẶC AUTO
 require_once 'auth.php';
 require_once '../includes/config.php';
 
 $role = $_SESSION['role'] ?? 0;
-$prefix = $_SESSION['prefix'] ?? '';
+$prefix = $_SESSION['prefix'] ?? ''; // Mã định danh riêng (VD: BOY, CC...)
 ?>
 <!DOCTYPE html>
 <html lang="vi">
@@ -45,7 +45,7 @@ $prefix = $_SESSION['prefix'] ?? '';
 
         <form action="process.php" method="POST" enctype="multipart/form-data" id="addForm">
             <div class="row g-4 justify-content-center">
-                <!-- CỘT TRÁI -->
+                <!-- CỘT TRÁI: UPLOAD ẢNH -->
                 <div class="col-12 col-lg-5 order-lg-2">
                     <div class="form-card sticky-top" style="top: 20px; z-index: 1;">
                         <label class="form-label fw-bold text-uppercase text-secondary" style="font-size: 12px;">Hình
@@ -61,32 +61,52 @@ $prefix = $_SESSION['prefix'] ?? '';
                                 ảnh</span></button>
                     </div>
                 </div>
-                <!-- CỘT PHẢI -->
+
+                <!-- CỘT PHẢI: THÔNG TIN ACC -->
                 <div class="col-12 col-lg-7 order-lg-1">
                     <div class="form-card">
+
+                        <!-- NHẬP MÃ SỐ (ĐÃ SỬA LOGIC) -->
                         <div class="mb-4">
                             <label class="form-label fw-bold">Mã Acc / Tiêu đề <span
                                     class="text-danger">*</span></label>
-                            <?php if ($role == 1): ?>
-                            <input type="text" name="title" class="form-control custom-input"
-                                placeholder="Nhập mã số..." required>
+
+                            <div class="input-group">
+                                <?php if (!empty($prefix)): ?>
+                                <span class="input-group-text bg-light fw-bold text-secondary"
+                                    title="Mã định danh của bạn">
+                                    <?= $prefix ?>
+                                </span>
+                                <?php endif; ?>
+
+                                <input type="text" name="title" class="form-control custom-input"
+                                    placeholder="<?php echo empty($prefix) ? 'Nhập mã số...' : 'Nhập mã tùy ý hoặc ĐỂ TRỐNG để tự tạo'; ?>">
+                            </div>
+
+                            <?php if (!empty($prefix)): ?>
+                            <small class="text-success fst-italic mt-1 d-block">
+                                <i class="ph-fill ph-check-circle"></i>
+                                Nếu để trống, hệ thống tự tạo mã: <b><?= $prefix ?>1, <?= $prefix ?>2...</b>
+                            </small>
                             <?php else: ?>
-                            <div class="input-group"><span
-                                    class="input-group-text bg-light fw-bold text-secondary">PREFIX:
-                                    <?= $prefix ?></span><input type="text"
-                                    class="form-control custom-input bg-white text-muted"
-                                    value="Hệ thống tự động tạo mã số" disabled><input type="hidden" name="auto_prefix"
-                                    value="1"></div>
-                            <small class="text-success fst-italic"><i class="ph-fill ph-check-circle"></i> Mã sẽ tự
-                                tăng: <?= $prefix ?>1, <?= $prefix ?>2...</small>
+                            <small class="text-secondary fst-italic mt-1 d-block">
+                                Admin vui lòng nhập mã thủ công.
+                            </small>
                             <?php endif; ?>
                         </div>
-                        <div class="mb-4"><label class="form-label fw-bold text-primary"><i
-                                    class="ph-bold ph-lock-key"></i> Ghi chú nội bộ</label><textarea name="private_note"
-                                class="form-control custom-input" rows="2"
-                                placeholder="Nhập giá vốn, nguồn nhập..."></textarea></div>
+
+                        <!-- GHI CHÚ -->
+                        <div class="mb-4">
+                            <label class="form-label fw-bold text-primary"><i class="ph-bold ph-lock-key"></i> Ghi chú
+                                nội bộ</label>
+                            <textarea name="private_note" class="form-control custom-input" rows="2"
+                                placeholder="Nhập giá vốn, nguồn nhập..."></textarea>
+                        </div>
+
+                        <!-- CẤU HÌNH GIÁ -->
                         <label class="form-label mb-3 fw-bold text-uppercase text-secondary"
                             style="font-size: 12px;">Tùy chọn bán hàng</label>
+
                         <div class="mode-switch-group">
                             <div class="d-flex align-items-center gap-3">
                                 <div class="bg-warning bg-opacity-10 p-2 rounded-3 text-warning"><i
@@ -106,6 +126,7 @@ $prefix = $_SESSION['prefix'] ?? '';
                                     class="form-control custom-input price-input-lg border-start-0" placeholder="0"
                                     oninput="formatCurrency(this)"></div>
                         </div>
+
                         <div class="mode-switch-group">
                             <div class="d-flex align-items-center gap-3">
                                 <div class="bg-info bg-opacity-10 p-2 rounded-3 text-info"><i
@@ -130,9 +151,11 @@ $prefix = $_SESSION['prefix'] ?? '';
                                 </div>
                                 <div class="col-4"><select name="unit" class="form-select custom-input h-100 fw-bold">
                                         <option value="2" selected>/ Ngày</option>
+                                        <option value="1">/ Giờ</option>
                                     </select></div>
                             </div>
                         </div>
+
                         <div class="d-grid gap-2 mt-5"><button type="button" onclick="submitForm()"
                                 class="btn-submit"><i class="ph-bold ph-check-circle me-2"></i> ĐĂNG NGAY</button></div>
                     </div>
@@ -148,8 +171,6 @@ $prefix = $_SESSION['prefix'] ?? '';
         </a><a href="#" class="nav-item disabled" style="opacity:0.3"><i class="ph-duotone ph-image"></i></a></div>
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
-
-    <!-- LINK TỚI FILE JS MỚI -->
     <script src="assets/js/pages/product-form.js?v=<?= time() ?>"></script>
 </body>
 

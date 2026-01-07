@@ -1,4 +1,4 @@
-/* assets/css/style.css - UPDATE V12: ADJUST TITLE & COPY BUTTON */
+/* assets/css/style.css - UPDATE V15: PAGINATION SLIDER */
 
 @import url('https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&display=swap');
 
@@ -111,22 +111,18 @@ ul { padding: 0; margin: 0; list-style: none; }
 .product-card:hover .product-thumb { transform: scale(1.05); }
 .product-body { padding: 15px; }
 
-/* [UPDATE] Tiêu đề Acc */
 .product-title {
     font-weight: 700; color: var(--text-main); font-size: 15px;
     white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
-    /* Bỏ max-width để nó tự động co giãn với flexbox */
 }
 
-/* NÚT COPY CODE */
 .btn-copy-code {
     background: #f3f4f6; color: #4b5563;
     border: 1px solid #e5e7eb; border-radius: 6px;
     padding: 2px 8px; font-size: 11px; font-weight: 700;
     cursor: pointer; transition: all 0.2s;
     display: inline-flex; align-items: center; gap: 4px;
-    flex-shrink: 0;
-    height: 24px;
+    flex-shrink: 0; height: 24px;
 }
 .btn-copy-code:hover { background: #e5e7eb; color: #111827; }
 .btn-copy-code i { font-size: 13px; }
@@ -161,17 +157,7 @@ ul { padding: 0; margin: 0; list-style: none; }
 .feed-item { background: #fff; border-radius: 16px; overflow: hidden; border: 1px solid var(--border); }
 .feed-item img { width: 100%; height: auto; display: block; }
 
-/* PAGINATION */
-.pagination { margin-top: 30px; }
-.pagination .page-link {
-    color: var(--text-sub); border: 1px solid var(--border);
-    margin: 0 4px; border-radius: 8px; font-weight: 700; background: #fff; padding: 10px 18px;
-}
-.pagination .page-link:hover, .pagination .page-item.active .page-link {
-    background: var(--accent); border-color: var(--accent); color: white;
-}
-.pagination .page-item.disabled .page-link { color: #ccc; background: #f9fafb; border-color: #e5e7eb; }
-
+/* LOADING */
 .loading-spinner { text-align: center; padding: 20px; display: none; }
 .spinner-icon {
     width: 40px; height: 40px; border: 4px solid #fffbeb; border-top: 4px solid var(--accent);
@@ -185,20 +171,142 @@ footer {
     font-weight: 600; margin-top: 60px;
 }
 
-/* --- FIX RIÊNG CHO MOBILE --- */
+/* --- MOBILE FIX --- */
 @media (max-width: 768px) {
-    .product-thumb-box {
-        /* Chỉnh độ cao khung ảnh: */
-        /* 100% = Hình vuông (Hợp ảnh FreeFire dọc) */
-        /* 60% = Hình chữ nhật ngang (Hợp ảnh PUBG/Liên Quân ngang) */
-        padding-top: 46% !important;
-    }
+    .product-thumb-box { padding-top: 46% !important; }
+    .product-thumb { object-fit: contain !important; background-color: #202020; }
+}
 
-    .product-thumb {
-        /* Bắt buộc thu nhỏ ảnh để vừa khít khung (Hiện đủ 100% ảnh) */
-        object-fit: contain !important;
-        
-        /* Màu nền lấp vào khoảng trống (nếu ảnh không vừa khít) */
-        background-color: #202020; 
-    }
+/* ========================================= */
+/* 1. HIỆU ỨNG GRID SẢN PHẨM (CHỐNG GIẬT)    */
+/* ========================================= */
+#productGrid {
+    transition: opacity 0.2s ease-out;
+    min-height: 500px; /* Giữ chiều cao cố định để không bị co giật footer */
+}
+
+/* ========================================= */
+/* 2. PAGINATION - BOXY STYLE (FIXED)        */
+/* ========================================= */
+
+.pagination-wrapper {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 12px;
+    margin-top: 40px;
+    margin-bottom: 40px;
+    padding: 0 10px;
+    position: relative;
+    width: 100%;
+}
+
+/* NÚT ĐIỀU HƯỚNG */
+.page-nav-btn {
+    width: 44px;
+    height: 44px;
+    border-radius: 50%;
+    background: #fff;
+    border: 1px solid var(--border);
+    color: var(--text-main);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    text-decoration: none;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    box-shadow: 0 2px 5px rgba(0,0,0,0.05);
+    flex-shrink: 0;
+    font-size: 18px;
+    user-select: none;
+}
+
+.page-nav-btn:hover {
+    background: #fff;
+    color: var(--accent);
+    border-color: var(--accent);
+    box-shadow: 0 4px 10px rgba(245, 158, 11, 0.15);
+    transform: translateY(-2px);
+}
+
+.page-nav-btn:active { transform: scale(0.95); }
+
+/* Nút bị mờ (Disable) */
+.page-nav-btn.disabled {
+    opacity: 0.4;
+    pointer-events: none;
+    background: #f3f4f6;
+    border-color: #e5e7eb;
+    color: #9ca3af;
+    box-shadow: none;
+}
+
+/* VIÊN THUỐC */
+.page-numbers-capsule {
+    background: #fff;
+    border-radius: 50px;
+    padding: 6px 10px;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.03);
+    display: flex;
+    align-items: center;
+    max-width: 320px;
+    overflow: hidden;
+    flex-grow: 1;
+    border: 1px solid var(--border);
+}
+
+@media (min-width: 768px) {
+    .page-numbers-capsule { max-width: 450px; flex-grow: 0; }
+}
+
+/* THANH CHỨA SỐ */
+.page-numbers-container {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    overflow-x: auto;
+    scroll-behavior: smooth;
+    white-space: nowrap;
+    -ms-overflow-style: none; scrollbar-width: none;
+    padding: 0 5px;
+    width: 100%;
+}
+.page-numbers-container::-webkit-scrollbar { display: none; }
+
+/* Ô SỐ */
+.page-number-item {
+    width: 36px;
+    height: 36px;
+    border-radius: 8px; /* Bo góc vuông nhẹ */
+    background: transparent;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 700;
+    font-size: 14px;
+    color: var(--text-sub);
+    text-decoration: none;
+    flex-shrink: 0;
+    transition: all 0.2s;
+    cursor: pointer;
+    user-select: none;
+}
+
+.page-number-item:hover {
+    color: var(--text-main);
+    background: #f3f4f6;
+}
+
+/* ACTIVE STATE */
+.page-number-item.active {
+    background: linear-gradient(135deg, #f59e0b, #d97706);
+    color: #fff;
+    box-shadow: 0 3px 8px rgba(245, 158, 11, 0.3);
+}
+
+/* MOBILE */
+@media (max-width: 768px) {
+    .pagination-wrapper { gap: 8px; }
+    .page-nav-btn { width: 40px; height: 40px; font-size: 16px; }
+    .page-numbers-capsule { max-width: none; }
 }
