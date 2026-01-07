@@ -1,185 +1,201 @@
-/* admin/assets/css/admin.css - V24: CLEAN & MOBILE CARD VIEW */
+/* admin/assets/css/admin.css - FINAL FIXED VERSION (SWITCH + BUTTON + MOBILE V8) */
 
-/* 1. TABLE & LIST */
+/* ========================================================= */
+/* 1. TABLE & DESKTOP STYLES */
+/* ========================================================= */
 .card-table { background: #ffffff; border-radius: 16px; overflow: hidden; border: 1px solid #e5e7eb; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05); }
 .table { margin-bottom: 0; width: 100%; }
+
 .table thead th { background: #f9fafb; color: #6b7280; font-weight: 700; font-size: 12px; text-transform: uppercase; padding: 18px 24px; border-bottom: 1px solid #e5e7eb; white-space: nowrap; }
 .table td { padding: 16px 24px; vertical-align: middle; border-bottom: 1px solid #f3f4f6; color: #111827; font-weight: 500; }
-.table tr:hover td { background-color: #fcfcfc; }
+
+/* FIX: XÓA MÀU NỀN XÁM KHI HOVER/ACTIVE */
+.table tr:hover td { background-color: #ffffff !important; }
+.table-hover tbody tr:hover { background-color: #ffffff !important; }
+* { -webkit-tap-highlight-color: transparent !important; }
+.table tr:active, .table td:active { background-color: #ffffff !important; }
+
 .thumb-img { width: 60px; height: 60px; border-radius: 8px; object-fit: cover; border: 1px solid #e5e7eb; }
 
-/* 2. BADGES */
-.badge-soft { padding: 4px 8px; border-radius: 4px; font-size: 10px; font-weight: 700; text-transform: uppercase; color: #fff; display: inline-flex; align-items: center; justify-content: center; letter-spacing: 0.3px; border: none; line-height: 1; }
-.badge-sell { background-color: #f59e0b; }
-.badge-rent { background-color: #3b82f6; }
-.badge-status-active { background-color: #10b981; color: #fff; }
-.badge-status-sold { background-color: #ef4444; color: #fff; }
-
-/* 3. PRICE DISPLAY */
-.price-display-sell { font-size: 15px; font-weight: 800; color: #dc2626; margin-bottom: 2px; }
-.price-display-rent { font-size: 13px; font-weight: 600; color: #0284c7; }
-
-/* 4. BUTTONS & ACTIONS */
-.btn-action { width: 36px; height: 36px; border-radius: 8px; display: inline-flex; align-items: center; justify-content: center; transition: all 0.2s; background: #fff; border: 1px solid #e5e7eb; color: #6b7280; text-decoration: none; font-size: 16px; }
-.btn-action:hover { transform: translateY(-1px); box-shadow: 0 2px 4px rgba(0,0,0,0.05); }
-.btn-submit { background: linear-gradient(135deg, #f59e0b, #d97706); color: #fff; border: none; padding: 12px 24px; border-radius: 10px; font-weight: 700; text-transform: uppercase; box-shadow: 0 4px 10px rgba(245, 158, 11, 0.2); transition: 0.3s; width: 100%; }
-.btn-submit:hover { transform: translateY(-2px); box-shadow: 0 6px 15px rgba(245, 158, 11, 0.3); color: #fff; }
-
-/* 5. FORM ELEMENTS */
+/* ========================================================= */
+/* 2. FORM ELEMENTS & SWITCH TOGGLE (ĐÃ FIX) */
+/* ========================================================= */
 .form-card { background: #ffffff; border: 1px solid #e5e7eb; border-radius: 20px; padding: 30px; box-shadow: 0 10px 30px -10px rgba(0, 0, 0, 0.05); }
 .custom-input, .form-select, .input-group-text { background-color: #ffffff !important; border: 1px solid #d1d5db !important; color: #111827 !important; padding: 12px 16px; border-radius: 12px; font-size: 14px; font-weight: 500; transition: all 0.2s; }
 .custom-input:focus, .form-select:focus { border-color: #f59e0b !important; box-shadow: 0 0 0 4px rgba(245, 158, 11, 0.15) !important; outline: none; }
 .price-input-lg { font-size: 20px !important; font-weight: 800 !important; color: #059669 !important; padding-left: 15px !important; }
 .label-highlight { color: #b91c1c; font-weight: 800; font-size: 14px; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 8px; display: block; }
 
-/* CHECKBOX & SWITCH */
+/* CSS CHO NÚT GẠT (SWITCH) - ĐÃ KHÔI PHỤC */
+.custom-toggle { 
+    appearance: none; -webkit-appearance: none; 
+    width: 50px; height: 28px; 
+    background: #e5e7eb; border-radius: 50px; 
+    position: relative; cursor: pointer; outline: none; border: none; 
+    transition: background-color 0.3s; 
+    display: inline-block; vertical-align: middle; 
+}
+.custom-toggle::after { 
+    content: ''; position: absolute; top: 3px; left: 3px; 
+    width: 22px; height: 22px; 
+    background: #fff; border-radius: 50%; 
+    transition: transform 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275); 
+    box-shadow: 0 2px 4px rgba(0,0,0,0.2); 
+}
+.custom-toggle:checked { background: #10b981; }
+.custom-toggle:checked::after { transform: translateX(22px); }
+
+.mode-switch-group { background: #fff; border: 1px solid #e5e7eb; border-radius: 12px; padding: 15px; margin-bottom: 15px; display: flex; align-items: center; justify-content: space-between; transition: 0.2s; }
+
+/* CHECKBOX THƯỜNG (Dùng cho bảng) */
 .form-check-input { width: 1.5em; height: 1.5em; margin-top: 0.2em; border: 2px solid #9ca3af; cursor: pointer; background-color: #fff; }
 .form-check-input:checked { background-color: #f59e0b; border-color: #f59e0b; background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 20 20'%3e%3cpath fill='none' stroke='%23fff' stroke-linecap='round' stroke-linejoin='round' stroke-width='3' d='M6 10l3 3l6-6'/%3e%3c/svg%3e"); }
 
-.custom-toggle { appearance: none; -webkit-appearance: none; width: 60px; height: 32px; background: #d1d5db; border-radius: 50px; position: relative; cursor: pointer; outline: none; border: none; margin: 0; padding: 0; transition: background-color 0.3s; display: inline-block; vertical-align: middle; flex-shrink: 0; }
-.custom-toggle::after { content: ''; position: absolute; top: 3px; left: 3px; width: 26px; height: 26px; background: #fff; border-radius: 50%; transition: transform 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275); box-shadow: 0 2px 4px rgba(0,0,0,0.2); }
-.custom-toggle:checked { background: #10b981; }
-.custom-toggle:checked::after { transform: translateX(28px); }
-.mode-switch-group { background: #fff; border: 1px solid #e5e7eb; border-radius: 12px; padding: 20px; margin-bottom: 15px; display: flex; align-items: center; justify-content: space-between; width: 100%; transition: 0.2s; }
-
-/* 6. UPLOAD GRID (Used in Add/Edit) */
+/* ========================================================= */
+/* 3. UPLOAD GRID & BUTTONS */
+/* ========================================================= */
 .image-uploader-area { border: 2px dashed #d1d5db; border-radius: 16px; padding: 30px; text-align: center; background: #f9fafb; cursor: pointer; transition: 0.2s; }
 .image-uploader-area:hover { border-color: #f59e0b; background: #fffbeb; }
 
 .sortable-grid { 
-    display: grid !important; 
-    grid-template-columns: repeat(4, 1fr) !important; 
-    gap: 10px !important; 
-    margin-top: 20px;
-    width: 100%;
-    max-height: calc(25vw + 10px); 
-    overflow: hidden;
-    transition: max-height 0.4s ease;
-    padding-bottom: 2px;
+    display: grid !important; grid-template-columns: repeat(4, 1fr) !important; gap: 10px !important; 
+    margin-top: 20px; width: 100%; max-height: calc(25vw + 10px); overflow: hidden; transition: max-height 0.4s ease; padding-bottom: 2px;
 }
 .sortable-grid.expanded { max-height: 5000px !important; overflow: visible; }
 @media (min-width: 768px) { .sortable-grid { max-height: 150px; } }
 
-.btn-toggle-view {
-    display: block; width: 100%; margin-top: 10px; background: #f3f4f6;
-    border: none; color: #6b7280; font-size: 13px; font-weight: 700;
-    padding: 10px; border-radius: 8px; cursor: pointer; transition: 0.2s; text-align: center;
+/* NÚT XEM THÊM ẢNH (ĐÃ LÀM ĐẸP) */
+.btn-toggle-view { 
+    display: block; width: 100%; margin-top: 15px; 
+    background: #f3f4f6; color: #6b7280; 
+    border: 1px solid transparent; 
+    font-size: 13px; font-weight: 700; 
+    padding: 12px; border-radius: 50px; 
+    cursor: pointer; transition: 0.2s; text-align: center;
 }
 .btn-toggle-view:hover { background: #e5e7eb; color: #111827; }
 .btn-toggle-view.d-none { display: none; }
 
-.sortable-item { 
-    position: relative; width: 100%; height: 0; padding-bottom: 100%;
-    border-radius: 12px; overflow: hidden; cursor: grab; 
-    border: 1px solid #e5e7eb; background: #fff; box-shadow: 0 2px 4px rgba(0,0,0,0.05); 
-}
+.sortable-item { position: relative; width: 100%; height: 0; padding-bottom: 100%; border-radius: 12px; overflow: hidden; cursor: grab; border: 1px solid #e5e7eb; background: #fff; box-shadow: 0 2px 4px rgba(0,0,0,0.05); }
 .sortable-item img { position: absolute; top: 0; left: 0; width: 100%; height: 100%; object-fit: cover; pointer-events: none; }
 .sortable-item:first-child { border: 3px solid #f59e0b; }
-.sortable-item:first-child::before { 
-    content: '★ ẢNH BÌA'; position: absolute; bottom: 0; left: 0; right: 0; 
-    background: #f59e0b; color: #fff; font-size: 9px; font-weight: 800; 
-    text-align: center; padding: 3px 0; z-index: 2; 
-}
-.btn-remove-img { 
-    position: absolute; top: 4px; right: 4px; width: 22px; height: 22px; 
-    background: rgba(255, 255, 255, 0.95); color: #ef4444; border-radius: 50%; 
-    display: flex; align-items: center; justify-content: center; 
-    cursor: pointer; z-index: 5; box-shadow: 0 1px 3px rgba(0,0,0,0.2); font-size: 14px;
-}
-.btn-remove-img:hover { background: #ef4444; color: #fff; }
+.sortable-item:first-child::before { content: '★ ẢNH BÌA'; position: absolute; bottom: 0; left: 0; right: 0; background: #f59e0b; color: #fff; font-size: 9px; font-weight: 800; text-align: center; padding: 3px 0; z-index: 2; }
+.btn-remove-img { position: absolute; top: 4px; right: 4px; width: 22px; height: 22px; background: rgba(255, 255, 255, 0.95); color: #ef4444; border-radius: 50%; display: flex; align-items: center; justify-content: center; cursor: pointer; z-index: 5; box-shadow: 0 1px 3px rgba(0,0,0,0.2); font-size: 14px; }
 
-/* 7. AJAX LOADING OVERLAY */
-.ajax-loading-overlay {
-    position: absolute; top: 0; left: 0; width: 100%; height: 100%;
-    background: rgba(255,255,255,0.7); z-index: 10;
-    display: flex; align-items: center; justify-content: center;
-    border-radius: 16px;
-}
+/* Actions & Badges */
+.badge-soft { padding: 4px 8px; border-radius: 4px; font-size: 10px; font-weight: 700; text-transform: uppercase; color: #fff; display: inline-flex; align-items: center; justify-content: center; letter-spacing: 0.3px; border: none; line-height: 1; }
+.badge-sell { background-color: #f59e0b; }
+.badge-rent { background-color: #3b82f6; }
+.badge-status-active { background-color: #10b981; color: #fff; }
+.badge-status-sold { background-color: #ef4444; color: #fff; }
+.price-display-sell { font-size: 15px; font-weight: 800; color: #dc2626; margin-bottom: 2px; }
+.price-display-rent { font-size: 13px; font-weight: 600; color: #0284c7; }
+.btn-action { width: 36px; height: 36px; border-radius: 8px; display: inline-flex; align-items: center; justify-content: center; transition: all 0.2s; background: #fff; border: 1px solid #e5e7eb; color: #6b7280; text-decoration: none; font-size: 16px; }
+.btn-action:hover { transform: translateY(-1px); box-shadow: 0 2px 4px rgba(0,0,0,0.05); }
+.btn-submit { background: linear-gradient(135deg, #f59e0b, #d97706); color: #fff; border: none; padding: 12px 24px; border-radius: 10px; font-weight: 700; text-transform: uppercase; box-shadow: 0 4px 10px rgba(245, 158, 11, 0.2); transition: 0.3s; width: 100%; }
+.ajax-loading-overlay { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: rgba(255,255,255,0.7); z-index: 10; display: flex; align-items: center; justify-content: center; border-radius: 16px; }
 
 /* ========================================================= */
-/* MOBILE CARD VIEW (BIẾN BẢNG THÀNH THẺ) */
+/* 2. MOBILE CARD VIEW - FINAL FIXED ALIGNMENT (CĂN GIỮA TUYỆT ĐỐI) */
 /* ========================================================= */
 @media (max-width: 768px) {
-    /* Ẩn tiêu đề bảng */
+    /* Ẩn Header bảng */
     .desktop-table thead { display: none; }
     
-    /* Biến mỗi dòng thành 1 thẻ */
+    /* Container thẻ */
     .desktop-table tbody tr {
-        display: flex;
-        flex-direction: column;
+        display: grid;
+        /* Cột 1: Ảnh (72px) | Cột 2: Nội dung | Cột 3: Nút (36px) */
+        grid-template-columns: 72px 1fr 36px; 
+        
+        /* FIX QUAN TRỌNG: Chỉ dùng 1 dòng duy nhất để dễ căn giữa */
+        grid-template-rows: 1fr; 
+        
+        /* FIX QUAN TRỌNG: Lệnh này sẽ căn giữa dọc toàn bộ 3 cột */
+        align-items: center; 
+        
+        gap: 0 12px; /* Gap ngang thoáng hơn xíu */
         background: #fff;
+        padding: 10px;
+        margin-bottom: 10px;
         border-radius: 12px;
-        box-shadow: 0 4px 15px rgba(0,0,0,0.05);
-        margin-bottom: 20px;
         border: 1px solid #e5e7eb;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.03);
         position: relative;
-        padding: 15px;
-        padding-top: 50px; /* Chừa chỗ cho checkbox */
+        min-height: 94px; 
     }
 
-    /* Checkbox bay lên góc trên cùng bên trái */
-    .desktop-table td:nth-child(1) {
-        position: absolute;
-        top: 10px; left: 10px;
-        padding: 0; border: none;
-        z-index: 5;
+    /* Diệt màu nền xám (Zebra) */
+    .desktop-table tbody tr:nth-of-type(odd), 
+    .desktop-table tbody tr:hover, 
+    .desktop-table tbody tr:active {
+        background-color: #ffffff !important;
     }
-    .desktop-table td:nth-child(1) input { width: 24px; height: 24px; }
 
-    /* Cột Ảnh (Thứ 2) */
+    /* --- CỘT 1: ẢNH --- */
     .desktop-table td:nth-child(2) {
-        padding: 0; border: none; margin-bottom: 10px;
-        display: flex; justify-content: center;
+        grid-column: 1 / 2;
+        grid-row: 1 / 2; 
+        padding: 0; border: none;
+        display: flex; align-items: center; justify-content: center;
+        height: 100%; /* Full chiều cao để căn giữa */
     }
     .thumb-img {
-        width: 100%; height: 200px; /* Ảnh to rõ */
-        object-fit: cover; border-radius: 8px;
+        width: 72px; height: 72px; 
+        border-radius: 8px; object-fit: cover;
     }
 
-    /* Cột Thông tin (Thứ 3) */
-    .desktop-table td:nth-child(3) {
-        padding: 5px 0; border: none;
-    }
-    .desktop-table td:nth-child(3) .fw-bold { font-size: 16px; }
+    /* --- CỘT 2: THÔNG TIN (GIỮA) --- */
+    /* ẨN CHECKBOX */
+    .desktop-table td:nth-child(1) { display: none; }
 
-    /* Cột Giá (Thứ 4) */
-    .desktop-table td:nth-child(4) {
-        padding: 5px 0; border: none;
-        display: flex; align-items: center; justify-content: space-between;
-    }
-    .desktop-table td:nth-child(4)::before {
-        content: 'Giá tiền:'; font-size: 13px; color: #6b7280;
-    }
-
-    /* Cột Người đăng (Thứ 5 - Nếu có) */
-    .desktop-table td:nth-child(5) {
-        padding: 5px 0; border: none;
-        display: flex; align-items: center; justify-content: space-between;
-    }
-    /* Chỉ hiện label nếu cột này chứa text */
-    .desktop-table td:nth-child(5):not(:empty)::before {
-        content: 'Người đăng:'; font-size: 13px; color: #6b7280;
+    /* Nội dung tổng hợp */
+    .desktop-table td:nth-child(3) { 
+        grid-column: 2 / 3; 
+        grid-row: 1 / 2;
+        padding: 0; border: none;
+        display: flex; 
+        flex-direction: column; 
+        justify-content: center; /* Căn giữa dọc nội dung bên trong */
     }
 
-    /* Cột Trạng thái (Thứ 6) */
-    .desktop-table td:nth-child(6) {
-        padding: 5px 0; border: none;
-        display: flex; align-items: center; justify-content: space-between;
+    /* Tiêu đề */
+    .desktop-table td:nth-child(3) .fw-bold.text-dark {
+        font-size: 14px; line-height: 1.2; color: #111827;
+        margin-bottom: 3px; /* Cách dòng giá 1 chút */
+        display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;
     }
-    .desktop-table td:nth-child(6)::before {
-        content: 'Trạng thái:'; font-size: 13px; color: #6b7280;
-    }
+    /* Ẩn rác */
+    .desktop-table td:nth-child(3) .badge-soft, 
+    .desktop-table td:nth-child(3) .note-badge,
+    .desktop-table td:nth-child(3) .badge-group-pc { display: none !important; }
 
-    /* Cột Hành động (Thứ 7 - Cuối cùng) */
+    /* --- CỘT 3: NÚT BẤM (PHẢI) --- */
     .desktop-table td:last-child {
-        border-top: 1px dashed #e5e7eb;
-        margin-top: 10px; padding-top: 10px;
-        display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 10px;
+        grid-column: 3 / 4;
+        grid-row: 1 / 2; 
+        padding: 0; border: none; border-left: 1px dashed #f3f4f6;
+        padding-left: 8px;
+        display: flex; 
+        flex-direction: column; 
+        justify-content: center; /* Căn giữa dọc đám nút */
+        gap: 6px; 
+        height: 100%;
     }
-    .btn-action { width: 100%; height: 40px; border-radius: 6px; }
-    
-    /* Màu sắc nút trên mobile cho dễ nhìn */
-    .btn-action-view { background: #eff6ff; color: #3b82f6; border-color: #dbeafe; }
-    .btn-action-edit { background: #fffbeb; color: #d97706; border-color: #fcd34d; }
-    .btn-action-delete { background: #fef2f2; color: #ef4444; border-color: #fee2e2; }
+
+    /* Style nút Mobile */
+    .btn-action {
+        width: 32px; height: 32px; 
+        border-radius: 6px; font-size: 13px;
+        background: #f9fafb; border-color: #f3f4f6;
+        display: flex; align-items: center; justify-content: center;
+    }
+    .btn-action-view { color: #3b82f6; background: #eff6ff; border-color: #dbeafe; } 
+    .btn-action-edit { color: #d97706; background: #fffbeb; border-color: #fcd34d; } 
+    .btn-action-delete { color: #ef4444; background: #fef2f2; border-color: #fee2e2; }
+
+    /* Ẩn các cột thừa */
+    .desktop-table td:nth-child(4),
+    .desktop-table td:nth-child(5),
+    .desktop-table td:nth-child(6) { display: none !important; }
 }

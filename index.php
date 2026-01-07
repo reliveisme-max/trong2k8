@@ -1,5 +1,5 @@
 <?php
-// index.php - V20: INFINITE SCROLL + FIXED CSS (INLINE STYLE)
+// index.php - FINAL VERSION: SORTING LOGIC + HOT BADGE
 require_once 'includes/config.php';
 require_once 'includes/functions.php';
 
@@ -7,26 +7,26 @@ require_once 'includes/functions.php';
 $viewMode = isset($_GET['view']) && $_GET['view'] == 'rent' ? 'rent' : 'shop';
 $keyword  = isset($_GET['q']) ? trim($_GET['q']) : '';
 $page     = isset($_GET['page']) ? (int)$_GET['page'] : 1;
-$limit    = 12; // Số acc load mỗi lần
+$limit    = 12;
 $offset   = ($page - 1) * $limit;
-$isAjax   = isset($_GET['ajax']) && $_GET['ajax'] == 1; // Kiểm tra có phải gọi ngầm không
+$isAjax   = isset($_GET['ajax']) && $_GET['ajax'] == 1;
 
 // 2. XÂY DỰNG TRUY VẤN
 $whereArr = [];
 $params = [];
 
 if ($viewMode == 'rent') {
-    $whereArr[] = "price_rent > 0";
-    $priceCol = 'price_rent';
+    $whereArr[] = "p.price_rent > 0";
+    $priceCol = 'p.price_rent';
     $pageTitle = "Danh sách Acc Thuê";
 } else {
-    $whereArr[] = "price > 0";
-    $priceCol = 'price';
+    $whereArr[] = "p.price > 0";
+    $priceCol = 'p.price';
     $pageTitle = "Danh sách Acc Bán";
 }
 
 if ($keyword) {
-    $whereArr[] = "(title LIKE :kw OR id = :id)";
+    $whereArr[] = "(p.title LIKE :kw OR p.id = :id)";
     $params[':kw'] = "%$keyword%";
     $params[':id'] = (int)$keyword;
 }
@@ -40,20 +40,30 @@ if (isset($_GET['max'])) {
     $params[':max'] = (int)$_GET['max'];
 }
 
-$whereArr[] = "status = 1";
+$whereArr[] = "p.status = 1";
 
-// 3. THỰC THI SQL
 $whereSql = !empty($whereArr) ? "WHERE " . implode(" AND ", $whereArr) : "";
 
 try {
-    // Nếu không phải Ajax (lần đầu vào), đếm tổng để hiển thị (tùy chọn)
+    // Đếm tổng
     if (!$isAjax) {
-        $stmtCount = $conn->prepare("SELECT COUNT(*) FROM products $whereSql");
+        $stmtCount = $conn->prepare("SELECT COUNT(*) FROM products p $whereSql");
         $stmtCount->execute($params);
         $totalRecords = $stmtCount->fetchColumn();
     }
 
-    $sql = "SELECT * FROM products $whereSql ORDER BY id DESC LIMIT $limit OFFSET $offset";
+    // [QUERY QUAN TRỌNG] Sắp xếp: Ghim -> Thứ tự -> Boss -> QTV -> Mới nhất
+    $sql = "SELECT p.*, a.role 
+            FROM products p 
+            LEFT JOIN admins a ON p.user_id = a.id 
+            $whereSql 
+            ORDER BY 
+                p.is_featured DESC,  -- 1. Acc Ghim lên đầu
+                p.view_order ASC,    -- 2. Theo thứ tự kéo thả
+                a.role DESC,         -- 3. Boss (1) xếp trên QTV (0)
+                p.id DESC            -- 4. Mới nhất xếp trên
+            LIMIT $limit OFFSET $offset";
+
     $stmt = $conn->prepare($sql);
     foreach ($params as $key => $val) $stmt->bindValue($key, $val);
     $stmt->execute();
@@ -63,14 +73,12 @@ try {
     die("Lỗi kết nối: " . $e->getMessage());
 }
 
-// === XỬ LÝ AJAX TRẢ VỀ HTML RỒI DỪNG ===
+// Xử lý Ajax
 if ($isAjax) {
     if (count($products) > 0) {
-        foreach ($products as $p) {
-            renderProductCard($p, $viewMode);
-        }
+        foreach ($products as $p) renderProductCard($p, $viewMode);
     }
-    exit; // Dừng code tại đây
+    exit;
 }
 
 // Hàm hiển thị Card
@@ -80,14 +88,28 @@ function renderProductCard($p, $viewMode)
     $unitLabel = ($viewMode == 'rent') ? (($p['unit'] == 2) ? '/ ngày' : '/ giờ') : '';
     $thumbUrl = 'uploads/' . $p['thumb'];
     if (empty($p['thumb'])) $thumbUrl = 'assets/images/no-image.jpg';
+
+    // Kiểm tra VIP
+    $isVip = ($p['is_featured'] == 1);
+    $vipClass = $isVip ? 'border-warning border-2' : ''; // Viền vàng nếu VIP
 ?>
 <div class="col-12 col-md-4 col-lg-3 feed-item-scroll">
-    <div class="product-card">
+    <div class="product-card <?= $vipClass ?>" style="position: relative;">
         <a href="detail.php?id=<?= $p['id'] ?>" class="text-decoration-none">
             <div class="product-thumb-box">
+                <!-- NHÃN NỔI BẬT -->
+                <?php if ($isVip): ?>
+                <span
+                    class="badge bg-danger position-absolute top-0 start-0 m-2 shadow-sm d-flex align-items-center gap-1"
+                    style="z-index:3; font-size:11px;">
+                    <i class="ph-fill ph-fire"></i> NỔI BẬT
+                </span>
+                <?php endif; ?>
+
                 <?php if ($viewMode == 'rent'): ?>
                 <span class="badge bg-primary position-absolute top-0 end-0 m-2" style="z-index:2">THUÊ</span>
                 <?php endif; ?>
+
                 <img src="<?= $thumbUrl ?>" class="product-thumb" loading="lazy" alt="<?= $p['title'] ?>">
             </div>
         </a>
@@ -128,26 +150,14 @@ function renderProductCard($p, $viewMode)
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>TRỌNG 2K8 SHOP - Uy Tín Hàng Đầu</title>
-
-    <!-- LIBS -->
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <script src="https://unpkg.com/@phosphor-icons/web"></script>
     <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&display=swap"
         rel="stylesheet">
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
-
-    <!-- [FIX CSS] Nhúng trực tiếp CSS vào HTML để tránh lỗi mạng/HTTP2 -->
     <style>
     <?php $cssPath=__DIR__ . '/assets/css/style.css';
-
-    if (file_exists($cssPath)) {
-        include $cssPath;
-    }
-
-    else {
-        echo "/* KHÔNG TÌM THẤY FILE CSS TẠI: $cssPath */";
-    }
-
+    if (file_exists($cssPath)) include $cssPath;
     ?>
     </style>
 </head>
@@ -168,7 +178,6 @@ function renderProductCard($p, $viewMode)
     </header>
 
     <div class="container py-5">
-
         <a href="https://zalo.me/0984074897" target="_blank" class="text-decoration-none">
             <div class="contact-banner">
                 <h3><i class="ph-fill ph-chat-circle-dots"></i> Hỗ trợ giao dịch 24/7 qua Zalo</h3>
@@ -183,9 +192,8 @@ function renderProductCard($p, $viewMode)
                 <input type="text" name="q" class="search-input-modern" placeholder="Tìm kiếm tên acc, mã số..."
                     value="<?= htmlspecialchars($keyword) ?>">
                 <?php if (!empty($keyword)): ?>
-                <a href="?view=<?= $viewMode ?>" class="search-btn-modern text-white text-decoration-none">
-                    <i class="ph-bold ph-x"></i>
-                </a>
+                <a href="?view=<?= $viewMode ?>" class="search-btn-modern text-white text-decoration-none"><i
+                        class="ph-bold ph-x"></i></a>
                 <?php else: ?>
                 <button type="submit" class="search-btn-modern"><i class="ph-bold ph-magnifying-glass"></i></button>
                 <?php endif; ?>
@@ -202,12 +210,10 @@ function renderProductCard($p, $viewMode)
             </div>
 
             <div class="toggle-group">
-                <a href="?view=shop" class="toggle-btn <?= $viewMode == 'shop' ? 'active' : '' ?>">
-                    <i class="ph-bold ph-shopping-cart"></i> MUA ACC
-                </a>
-                <a href="?view=rent" class="toggle-btn <?= $viewMode == 'rent' ? 'active' : '' ?>">
-                    <i class="ph-bold ph-clock-user"></i> THUÊ ACC
-                </a>
+                <a href="?view=shop" class="toggle-btn <?= $viewMode == 'shop' ? 'active' : '' ?>"><i
+                        class="ph-bold ph-shopping-cart"></i> MUA ACC</a>
+                <a href="?view=rent" class="toggle-btn <?= $viewMode == 'rent' ? 'active' : '' ?>"><i
+                        class="ph-bold ph-clock-user"></i> THUÊ ACC</a>
             </div>
         </div>
 
@@ -215,7 +221,6 @@ function renderProductCard($p, $viewMode)
         <div class="filter-section">
             <a href="?view=<?= $viewMode ?>"
                 class="filter-pill <?= (!isset($_GET['min']) && empty($keyword)) ? 'active' : '' ?>">Tất cả</a>
-
             <?php if ($viewMode == 'shop'): ?>
             <a href="?view=shop&min=0&max=5000000" class="filter-pill <?= checkActive(0, 5000000) ?>">Dưới 5m</a>
             <a href="?view=shop&min=5000000&max=10000000" class="filter-pill <?= checkActive(5000000, 10000000) ?>">5m -
@@ -238,9 +243,8 @@ function renderProductCard($p, $viewMode)
 
         <!-- PRODUCTS CONTAINER -->
         <div class="row g-4" id="productGrid">
-            <?php foreach ($products as $p): ?>
-            <?php renderProductCard($p, $viewMode); ?>
-            <?php endforeach; ?>
+            <?php foreach ($products as $p): renderProductCard($p, $viewMode);
+            endforeach; ?>
         </div>
 
         <!-- EMPTY STATE -->
@@ -252,19 +256,13 @@ function renderProductCard($p, $viewMode)
         </div>
         <?php endif; ?>
 
-        <!-- LOADING INDICATOR -->
+        <!-- LOADING -->
         <div class="text-center py-4" id="loadingIndicator" style="display: none;">
-            <div class="spinner-border text-warning" role="status">
-                <span class="visually-hidden">Loading...</span>
-            </div>
+            <div class="spinner-border text-warning" role="status"><span class="visually-hidden">Loading...</span></div>
             <div class="text-secondary mt-2 small">Đang tải thêm acc...</div>
         </div>
-
-        <!-- END OF LIST MESSAGE -->
-        <div class="text-center py-4 text-secondary small" id="endOfList" style="display: none;">
-            Đã hiển thị hết danh sách
-        </div>
-
+        <div class="text-center py-4 text-secondary small" id="endOfList" style="display: none;">Đã hiển thị hết danh
+            sách</div>
     </div>
 
     <footer>
@@ -274,9 +272,7 @@ function renderProductCard($p, $viewMode)
         </div>
     </footer>
 
-    <!-- SCRIPTS -->
     <script>
-    // Copy Code
     function copyCode(text) {
         navigator.clipboard.writeText(text).then(function() {
             const Toast = Swal.mixin({
@@ -284,50 +280,35 @@ function renderProductCard($p, $viewMode)
                 position: 'top-end',
                 showConfirmButton: false,
                 timer: 1500,
-                timerProgressBar: true,
-                didOpen: (toast) => {
-                    toast.addEventListener('mouseenter', Swal.stopTimer)
-                    toast.addEventListener('mouseleave', Swal.resumeTimer)
-                }
+                timerProgressBar: true
             });
             Toast.fire({
                 icon: 'success',
                 title: 'Đã sao chép mã!'
             });
         }, function(err) {
-            console.error('Không thể copy: ', err);
+            console.error('Lỗi copy: ', err);
         });
     }
 
-    // --- INFINITE SCROLL LOGIC ---
     let currentPage = 1;
     let isLoading = false;
     let hasMore = true;
-
-    // Lấy các tham số filter hiện tại
     const urlParams = new URLSearchParams(window.location.search);
 
-    // Hàm load thêm sản phẩm
     async function loadMoreProducts() {
         if (isLoading || !hasMore) return;
-
         isLoading = true;
         document.getElementById('loadingIndicator').style.display = 'block';
-
-        // Tăng page lên 1
         currentPage++;
-
-        // Cập nhật tham số page và thêm flag ajax=1
         urlParams.set('page', currentPage);
         urlParams.set('ajax', '1');
 
         try {
             const response = await fetch('index.php?' + urlParams.toString());
             const html = await response.text();
-
             if (html.trim() !== "") {
-                const grid = document.getElementById('productGrid');
-                grid.insertAdjacentHTML('beforeend', html);
+                document.getElementById('productGrid').insertAdjacentHTML('beforeend', html);
             } else {
                 hasMore = false;
                 document.getElementById('endOfList').style.display = 'block';
@@ -343,21 +324,15 @@ function renderProductCard($p, $viewMode)
 
     function handleScroll() {
         if (isLoading) return;
-
-        // Kiểm tra xem đã cuộn gần đến đáy chưa
         const {
             scrollTop,
             scrollHeight,
             clientHeight
         } = document.documentElement;
-        if (scrollTop + clientHeight >= scrollHeight - 500) {
-            loadMoreProducts();
-        }
+        if (scrollTop + clientHeight >= scrollHeight - 500) loadMoreProducts();
     }
-
     window.addEventListener('scroll', handleScroll);
     </script>
-
 </body>
 
 </html>

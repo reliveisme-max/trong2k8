@@ -32,7 +32,7 @@ if (!$isRentMode && $product['price'] == 0 && $product['price_rent'] > 0) {
 
 $unitLabel = $isRentMode ? (($product['unit'] == 2) ? "/ ngày" : "/ giờ") : "";
 $backLink = $isRentMode ? 'index.php?view=rent' : 'index.php';
-$actionText = $isRentMode ? 'THUÊ NGAY' : 'MUA NGAY';
+$actionText = $isRentMode ? 'THUÊ NGAY' : 'MÚC NGAY';
 
 // 5. XỬ LÝ GALLERY
 $gallery = json_decode($product['gallery'], true);
@@ -58,17 +58,20 @@ if (!empty($product['thumb'])) {
     <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&display=swap"
         rel="stylesheet">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fancyapps/ui@5.0/dist/fancybox/fancybox.css" />
-    
+
     <!-- [FIX QUAN TRỌNG] INLINE CSS: Đọc file CSS và in thẳng vào HTML để tránh lỗi mạng -->
     <style>
-        <?php
-            $cssPath = __DIR__ . '/assets/css/style.css';
-            if (file_exists($cssPath)) {
-                include $cssPath;
-            } else {
-                echo "/* KHÔNG TÌM THẤY FILE CSS TẠI: $cssPath */";
-            }
-        ?>
+    <?php $cssPath=__DIR__ . '/assets/css/style.css';
+
+    if (file_exists($cssPath)) {
+        include $cssPath;
+    }
+
+    else {
+        echo "/* KHÔNG TÌM THẤY FILE CSS TẠI: $cssPath */";
+    }
+
+    ?>
     </style>
 </head>
 
@@ -113,7 +116,7 @@ if (!empty($product['thumb'])) {
 
             <?php if ($product['status'] == 1): ?>
             <button onclick="buyNow()" class="btn-buy-lg">
-                <i class="ph-bold ph-shopping-cart"></i> <?= $actionText ?> (QUA ZALO)
+                <i class="ph-bold ph-shopping-cart"></i> <?= $actionText ?> (QUA ZÉP LÀO)
             </button>
             <div class="mt-3 text-secondary fst-italic small">
                 <i class="ph-fill ph-shield-check text-success"></i> Giao dịch tự động hoặc trung gian uy tín 100%
@@ -153,7 +156,9 @@ if (!empty($product['thumb'])) {
     <script src="https://cdn.jsdelivr.net/npm/@fancyapps/ui@5.0/dist/fancybox/fancybox.umd.js"></script>
     <script>
     Fancybox.bind("[data-fancybox]", {
-        Thumbs: { type: "modern" }
+        Thumbs: {
+            type: "modern"
+        }
     });
 
     const galleryImages = <?= json_encode($gallery) ?>;
@@ -216,7 +221,8 @@ if (!empty($product['thumb'])) {
         var url = window.location.href;
         var actionText = "<?= $actionText ?>";
         var zaloPhone = "0984074897";
-        var content = `Chào Shop, mình muốn ${actionText} Acc Mã Số: ${code} - Giá: ${price}${unitLabel}.\nLink: ${url}`;
+        var content =
+        `Chào Shop, mình muốn ${actionText} Acc Mã Số: ${code} - Giá: ${price}${unitLabel}.\nLink: ${url}`;
         var zaloLink = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent) ?
             `https://zalo.me/${zaloPhone}?text=${encodeURIComponent(content)}` :
             `https://chat.zalo.me/?phone=${zaloPhone}`;
@@ -224,4 +230,5 @@ if (!empty($product['thumb'])) {
     }
     </script>
 </body>
+
 </html>

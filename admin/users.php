@@ -83,7 +83,6 @@ $users = $conn->query("SELECT * FROM admins ORDER BY id ASC")->fetchAll();
         <nav class="d-flex flex-column gap-2">
             <a href="index.php" class="menu-item"><i class="ph-duotone ph-squares-four"></i> Tổng Quan</a>
             <a href="add.php" class="menu-item"><i class="ph-duotone ph-plus-circle"></i> Đăng Acc Mới</a>
-            <a href="library.php" class="menu-item"><i class="ph-duotone ph-image"></i> Thư viện ảnh</a>
             <a href="users.php" class="menu-item active"><i class="ph-duotone ph-users"></i> Nhân viên</a>
             <a href="change_pass.php" class="menu-item"><i class="ph-duotone ph-lock-key"></i> Đổi mật khẩu</a>
             <div class="mt-auto">
