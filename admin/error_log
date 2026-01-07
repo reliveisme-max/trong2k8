@@ -1,0 +1,5 @@
+[07-Jan-2026 00:41:10 Asia/Ho_Chi_Minh] PHP Fatal error:  Uncaught Error: Class "PDO" not found in /home/gtciqvsk/trong2k8.xdhoaphat.com/includes/config.php:32
+Stack trace:
+#0 /home/gtciqvsk/trong2k8.xdhoaphat.com/admin/login.php(4): require_once()
+#1 {main}
+  thrown in /home/gtciqvsk/trong2k8.xdhoaphat.com/includes/config.php on line 32

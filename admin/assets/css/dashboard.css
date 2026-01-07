@@ -1,0 +1,191 @@
+/* admin/assets/css/dashboard.css - UPDATE V3 */
+
+@import url('https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&display=swap');
+
+:root {
+    --bg-body: #f3f4f6;
+    --bg-card: #ffffff;
+    --text-primary: #111827;
+    --text-secondary: #6b7280;
+    --border-color: #e5e7eb;
+    --sidebar-width: 260px;
+    --bottom-nav-height: 70px;
+    
+    --accent: #f59e0b;
+    --accent-hover: #d97706;
+    
+    --success: #10b981;
+    --danger: #ef4444;
+    --info: #3b82f6;
+    
+    --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+    --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+}
+
+body {
+    background-color: var(--bg-body);
+    color: var(--text-primary);
+    font-family: 'Manrope', sans-serif;
+    font-size: 14px;
+    overflow-x: hidden;
+    padding-bottom: 0; margin: 0;
+}
+
+a { text-decoration: none; }
+
+/* --- YÊU CẦU: Nút đăng acc cho text màu đen --- */
+.btn-warning {
+    color: #000 !important;
+    font-weight: 700 !important;
+}
+
+/* --- YÊU CẦU: Cho mấy nút bấm ở tab thuê, bán, form tìm kiếm đẹp hơn chút --- */
+/* (Class này sẽ được dùng trong file admin/index.php sắp tới) */
+.admin-toolbar {
+    background: #fff;
+    border: 1px solid var(--border-color);
+    border-radius: 16px;
+    padding: 15px;
+    margin-bottom: 20px;
+    box-shadow: var(--shadow-sm);
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: 15px;
+}
+
+.filter-group {
+    display: inline-flex;
+    background: #f3f4f6;
+    padding: 4px;
+    border-radius: 50px;
+    border: 1px solid var(--border-color);
+}
+
+.filter-btn {
+    padding: 8px 20px;
+    border-radius: 50px;
+    font-weight: 700;
+    font-size: 13px;
+    color: var(--text-secondary);
+    transition: all 0.2s;
+    border: 1px solid transparent;
+}
+.filter-btn:hover { color: var(--text-primary); background: #e5e7eb; }
+.filter-btn.active {
+    background: #fff;
+    color: var(--accent-hover);
+    box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+    border-color: #e5e7eb;
+}
+
+.search-group {
+    position: relative;
+    width: 250px;
+}
+.search-group input {
+    width: 100%;
+    padding: 10px 15px;
+    padding-left: 40px;
+    border-radius: 50px;
+    border: 1px solid var(--border-color);
+    background: #fff;
+    transition: 0.2s;
+}
+.search-group input:focus {
+    outline: none;
+    border-color: var(--accent);
+    box-shadow: 0 0 0 3px rgba(245, 158, 11, 0.1);
+}
+.search-group i {
+    position: absolute; left: 14px; top: 50%;
+    transform: translateY(-50%);
+    color: var(--text-secondary);
+    font-size: 16px;
+}
+
+/* SIDEBAR */
+.sidebar {
+    width: var(--sidebar-width); height: 100vh; background: var(--bg-card);
+    border-right: 1px solid var(--border-color); position: fixed; top: 0; left: 0;
+    padding: 30px 20px; z-index: 1000; transition: 0.3s; overflow-y: auto;
+}
+
+.brand {
+    font-size: 22px; font-weight: 800; color: var(--text-primary);
+    margin-bottom: 40px; display: flex; align-items: center; gap: 12px;
+}
+.brand i { color: var(--accent); font-size: 28px; }
+
+.menu-item {
+    display: flex; align-items: center; gap: 14px; padding: 14px 20px;
+    color: var(--text-secondary); border-radius: 12px; margin-bottom: 8px;
+    font-weight: 600; transition: 0.2s;
+}
+.menu-item:hover { background: #fff7ed; color: var(--accent); }
+.menu-item.active {
+    background: linear-gradient(90deg, #fff7ed, #ffffff); color: var(--accent-hover);
+    border-left: 4px solid var(--accent); box-shadow: var(--shadow-sm);
+}
+.menu-item i { font-size: 20px; }
+
+/* MAIN CONTENT */
+.main-content { margin-left: var(--sidebar-width); padding: 30px; min-height: 100vh; }
+.content-container { max-width: 1400px; margin: 0 auto; }
+
+.top-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 30px; }
+.top-header h4 { font-weight: 800; font-size: 24px; color: var(--text-primary); margin: 0; }
+
+/* STATS CARDS */
+.stat-card {
+    background: var(--bg-card); border: 1px solid var(--border-color);
+    border-radius: 20px; padding: 24px; display: flex; align-items: center;
+    justify-content: space-between; transition: 0.3s; position: relative;
+    box-shadow: var(--shadow-sm); height: 100%;
+}
+.stat-card:hover { transform: translateY(-5px); box-shadow: var(--shadow-md); border-color: var(--accent); }
+
+.stat-info { position: relative; z-index: 2; }
+.stat-label { color: var(--text-secondary); font-size: 13px; font-weight: 700; margin-bottom: 8px; text-transform: uppercase; }
+.stat-value { font-size: 36px; font-weight: 800; color: var(--text-primary); line-height: 1; }
+
+.stat-icon {
+    width: 56px; height: 56px; border-radius: 16px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 28px; position: relative; z-index: 2;
+}
+.stat-card.total .stat-icon { background: #fff7ed; color: var(--accent); }
+.stat-card.sale .stat-icon { background: #ecfdf5; color: var(--success); }
+.stat-card.rent .stat-icon { background: #eff6ff; color: var(--info); }
+
+/* MOBILE RESPONSIVE */
+.bottom-nav {
+    display: none; position: fixed; bottom: 0; left: 0; width: 100%;
+    height: var(--bottom-nav-height); background: rgba(255, 255, 255, 0.95);
+    backdrop-filter: blur(10px); border-top: 1px solid var(--border-color);
+    z-index: 2000; justify-content: space-around; align-items: center; padding: 0 10px;
+}
+.nav-item { display: flex; flex-direction: column; align-items: center; color: var(--text-secondary); font-size: 10px; font-weight: 600; gap: 4px; }
+.nav-item.active { color: var(--accent); }
+.nav-item i { font-size: 22px; }
+.nav-item-add {
+    width: 55px; height: 55px; background: linear-gradient(135deg, var(--accent), var(--accent-hover));
+    border-radius: 50%; display: flex; align-items: center; justify-content: center;
+    color: #fff; box-shadow: 0 4px 15px rgba(245, 158, 11, 0.4);
+    transform: translateY(-25px); border: 4px solid #f3f4f6;
+}
+.nav-item-add i { font-size: 26px; }
+
+@media (max-width: 991px) {
+    body { padding-bottom: var(--bottom-nav-height); }
+    .sidebar { display: none; }
+    .main-content { margin-left: 0; padding: 20px 15px; }
+    .bottom-nav { display: flex; }
+    .stat-value { font-size: 28px; }
+    .stat-icon { width: 48px; height: 48px; font-size: 24px; }
+    
+    .admin-toolbar { flex-direction: column; align-items: stretch; }
+    .search-group { width: 100%; }
+    .filter-group { display: flex; justify-content: center; width: 100%; }
+}

@@ -1,0 +1,204 @@
+/* assets/css/style.css - UPDATE V12: ADJUST TITLE & COPY BUTTON */
+
+@import url('https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&display=swap');
+
+:root {
+    --bg-body: #f3f4f6;       
+    --bg-card: #ffffff;       
+    --text-main: #111827;     
+    --text-sub: #6b7280;      
+    --accent: #f59e0b;        
+    --accent-hover: #d97706;  
+    --price-color: #dc2626;   
+    --border: #e5e7eb;        
+    --shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+    --shadow-hover: 0 10px 15px -3px rgba(245, 158, 11, 0.15);
+}
+
+body {
+    background-color: var(--bg-body);
+    font-family: 'Manrope', sans-serif;
+    color: var(--text-main);
+    overflow-x: hidden;
+    font-size: 14px;
+    line-height: 1.5;
+}
+
+a { text-decoration: none; transition: 0.3s; }
+ul { padding: 0; margin: 0; list-style: none; }
+
+/* HEADER */
+.main-header {
+    background: #fff; border-bottom: 1px solid var(--border);
+    padding: 15px 0; position: sticky; top: 0; z-index: 1000;
+    box-shadow: 0 4px 20px rgba(0,0,0,0.03);
+}
+.logo-text {
+    font-weight: 800; font-size: 24px; color: var(--text-main);
+    text-transform: uppercase; letter-spacing: 0.5px; display: flex; align-items: center; gap: 8px;
+}
+.logo-text i { color: var(--accent); font-size: 28px; }
+
+/* BANNER */
+.contact-banner {
+    background: linear-gradient(135deg, #f59e0b, #d97706);
+    color: #fff; border-radius: 16px; padding: 30px; text-align: center;
+    box-shadow: 0 10px 25px rgba(245, 158, 11, 0.3);
+    transition: transform 0.3s; margin-bottom: 40px;
+}
+.contact-banner:hover { transform: translateY(-3px); }
+.contact-banner h3 { font-weight: 800; margin: 0; font-size: 20px; }
+.contact-sub { font-size: 14px; margin-top: 5px; opacity: 0.9; }
+
+/* SEARCH */
+.search-box-modern { position: relative; max-width: 600px; margin: 0 auto 40px; }
+.search-input-modern {
+    width: 100%; padding: 16px 25px; padding-right: 60px;
+    border: 1px solid var(--border); border-radius: 50px;
+    font-size: 15px; background: #fff; color: var(--text-main);
+    transition: all 0.3s; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
+}
+.search-input-modern:focus { outline: none; border-color: var(--accent); box-shadow: 0 0 0 4px rgba(245, 158, 11, 0.1); }
+.search-btn-modern {
+    position: absolute; right: 8px; top: 8px; width: 42px; height: 42px;
+    background: var(--accent); color: #fff; border: none; border-radius: 50%;
+    font-size: 18px; cursor: pointer; transition: 0.2s;
+    display: flex; align-items: center; justify-content: center;
+}
+.search-btn-modern:hover { background: var(--accent-hover); transform: scale(1.05); }
+
+/* FILTERS */
+.list-header-wrapper {
+    margin-bottom: 25px; padding-bottom: 15px; border-bottom: 1px dashed var(--border);
+    display: flex; flex-direction: column; gap: 15px;
+}
+@media (min-width: 768px) {
+    .list-header-wrapper { flex-direction: row; justify-content: space-between; align-items: center; }
+}
+
+.toggle-group {
+    background: #fff; padding: 5px; border-radius: 50px;
+    border: 1px solid var(--border); display: inline-flex;
+}
+.toggle-btn {
+    padding: 8px 24px; border-radius: 50px;
+    font-weight: 700; font-size: 14px;
+    color: var(--text-sub); background: transparent;
+    display: flex; align-items: center; gap: 8px;
+    border: none; cursor: pointer;
+}
+.toggle-btn:hover { color: var(--accent); }
+.toggle-btn.active { background: var(--accent); color: #fff; box-shadow: 0 2px 10px rgba(245, 158, 11, 0.3); }
+
+.filter-section { margin-bottom: 30px; display: flex; flex-wrap: wrap; gap: 10px; }
+.filter-pill {
+    padding: 10px 20px; border-radius: 10px;
+    background: #4b5563; border: none; color: #fff;
+    font-weight: 700; font-size: 14px; transition: all 0.2s;
+    display: inline-block; box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+.filter-pill:hover { background: #374151; transform: translateY(-2px); color: #fff; }
+.filter-pill.active { background: var(--accent); color: #000; box-shadow: 0 4px 10px rgba(245, 158, 11, 0.4); }
+
+/* PRODUCT CARD & COPY BUTTON */
+.product-card {
+    background: #fff; border: 1px solid var(--border); border-radius: 16px;
+    overflow: hidden; transition: 0.3s; height: 100%; position: relative;
+}
+.product-card:hover { transform: translateY(-5px); box-shadow: var(--shadow-hover); border-color: var(--accent); }
+.product-thumb-box { position: relative; padding-top: 60%; overflow: hidden; background: #f3f4f6; }
+.product-thumb { position: absolute; top: 0; left: 0; width: 100%; height: 100%; object-fit: cover; transition: 0.5s; }
+.product-card:hover .product-thumb { transform: scale(1.05); }
+.product-body { padding: 15px; }
+
+/* [UPDATE] Tiêu đề Acc */
+.product-title {
+    font-weight: 700; color: var(--text-main); font-size: 15px;
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+    /* Bỏ max-width để nó tự động co giãn với flexbox */
+}
+
+/* NÚT COPY CODE */
+.btn-copy-code {
+    background: #f3f4f6; color: #4b5563;
+    border: 1px solid #e5e7eb; border-radius: 6px;
+    padding: 2px 8px; font-size: 11px; font-weight: 700;
+    cursor: pointer; transition: all 0.2s;
+    display: inline-flex; align-items: center; gap: 4px;
+    flex-shrink: 0;
+    height: 24px;
+}
+.btn-copy-code:hover { background: #e5e7eb; color: #111827; }
+.btn-copy-code i { font-size: 13px; }
+
+.product-meta {
+    display: flex; justify-content: space-between; align-items: center;
+    padding-top: 12px; border-top: 1px dashed var(--border); margin-top: 10px;
+}
+.price-tag { color: var(--price-color); font-weight: 800; font-size: 18px; }
+.btn-detail {
+    background: #fff7ed; color: var(--accent-hover);
+    padding: 6px 14px; border-radius: 8px; font-size: 12px; font-weight: 700;
+}
+
+/* DETAIL PAGE */
+.detail-header {
+    background: #fff; padding: 30px; border-radius: 16px;
+    border: 1px solid var(--border); margin-bottom: 10px; 
+    box-shadow: var(--shadow); text-align: center;
+}
+.detail-title { font-size: 24px; font-weight: 800; color: var(--text-main); margin-bottom: 10px; }
+.detail-price-lg { font-size: 36px; font-weight: 900; color: var(--price-color); margin: 20px 0; }
+.btn-buy-lg {
+    background: linear-gradient(135deg, #f59e0b, #d97706);
+    color: white; font-weight: 800; font-size: 18px; text-transform: uppercase;
+    width: 100%; padding: 16px; border-radius: 50px; border: none;
+    box-shadow: 0 10px 20px rgba(245, 158, 11, 0.3); transition: 0.3s;
+}
+.btn-buy-lg:hover { transform: translateY(-2px); box-shadow: 0 15px 30px rgba(245, 158, 11, 0.4); }
+
+.feed-gallery { display: flex; flex-direction: column; gap: 5px; padding-bottom: 50px; }
+.feed-item { background: #fff; border-radius: 16px; overflow: hidden; border: 1px solid var(--border); }
+.feed-item img { width: 100%; height: auto; display: block; }
+
+/* PAGINATION */
+.pagination { margin-top: 30px; }
+.pagination .page-link {
+    color: var(--text-sub); border: 1px solid var(--border);
+    margin: 0 4px; border-radius: 8px; font-weight: 700; background: #fff; padding: 10px 18px;
+}
+.pagination .page-link:hover, .pagination .page-item.active .page-link {
+    background: var(--accent); border-color: var(--accent); color: white;
+}
+.pagination .page-item.disabled .page-link { color: #ccc; background: #f9fafb; border-color: #e5e7eb; }
+
+.loading-spinner { text-align: center; padding: 20px; display: none; }
+.spinner-icon {
+    width: 40px; height: 40px; border: 4px solid #fffbeb; border-top: 4px solid var(--accent);
+    border-radius: 50%; animation: spin 1s linear infinite; margin: 0 auto;
+}
+@keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+
+footer {
+    background: #fff; border-top: 1px solid var(--border);
+    padding: 40px 0; text-align: center; color: var(--text-sub);
+    font-weight: 600; margin-top: 60px;
+}
+
+/* --- FIX RIÊNG CHO MOBILE --- */
+@media (max-width: 768px) {
+    .product-thumb-box {
+        /* Chỉnh độ cao khung ảnh: */
+        /* 100% = Hình vuông (Hợp ảnh FreeFire dọc) */
+        /* 60% = Hình chữ nhật ngang (Hợp ảnh PUBG/Liên Quân ngang) */
+        padding-top: 46% !important;
+    }
+
+    .product-thumb {
+        /* Bắt buộc thu nhỏ ảnh để vừa khít khung (Hiện đủ 100% ảnh) */
+        object-fit: contain !important;
+        
+        /* Màu nền lấp vào khoảng trống (nếu ảnh không vừa khít) */
+        background-color: #202020; 
+    }
+}
