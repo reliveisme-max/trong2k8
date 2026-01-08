@@ -1,5 +1,5 @@
 <?php
-// index.php - FIX ERROR: MIXED NAMED AND POSITIONAL PARAMETERS
+// index.php - FINAL: HIỆN TẤT CẢ ACC (BOSS LÊN ĐẦU, CTV XUỐNG DƯỚI)
 require_once 'includes/config.php';
 require_once 'includes/functions.php';
 
@@ -11,13 +11,11 @@ $limit    = 12;
 $offset   = ($page - 1) * $limit;
 $isAjax   = isset($_GET['ajax']) && $_GET['ajax'] == 1;
 
-// Nhận trạng thái Order và Danh sách Tag
-$isOrder  = isset($_GET['order']) && $_GET['order'] == 1 ? 1 : 0;
 $tagIds   = isset($_GET['tag_ids']) ? $_GET['tag_ids'] : '';
 
-// 2. XÂY DỰNG CÂU TRUY VẤN (DÙNG TOÀN BỘ DẤU ?)
+// 2. XÂY DỰNG CÂU TRUY VẤN
 $whereArr = [];
-$params = []; // Mảng chứa giá trị (Index tự động 0,1,2...)
+$params = [];
 
 // A. Phân loại Bán / Thuê
 if ($viewMode == 'rent') {
@@ -27,14 +25,10 @@ if ($viewMode == 'rent') {
 } else {
     $whereArr[] = "p.price > 0";
     $priceCol = 'p.price';
-    $pageTitleText = ($isOrder == 1) ? "Danh sách Acc Order / Ký Gửi" : "Danh sách Acc Bán (Có sẵn)";
+    $pageTitleText = "Danh sách Acc Bán";
 }
 
-// B. Lọc theo trạng thái Order
-if ($viewMode == 'shop') {
-    $whereArr[] = "p.is_order = ?";
-    $params[] = $isOrder;
-}
+// B. (ĐÃ XÓA LỌC ORDER - ĐỂ HIỆN TẤT CẢ)
 
 // C. Tìm kiếm từ khóa
 if ($keyword) {
@@ -47,10 +41,8 @@ if ($keyword) {
 // D. Lọc theo Tag ID
 if (!empty($tagIds)) {
     $tIds = explode(',', $tagIds);
-    // Tạo chuỗi dấu hỏi (?,?,?)
     $inQuery = implode(',', array_fill(0, count($tIds), '?'));
     $whereArr[] = "pt.tag_id IN ($inQuery)";
-
     foreach ($tIds as $tid) {
         $params[] = (int)$tid;
     }
@@ -70,9 +62,10 @@ $whereArr[] = "p.status = 1";
 $whereSql = !empty($whereArr) ? "WHERE " . implode(" AND ", $whereArr) : "";
 
 try {
-    // JOIN BẢNG ĐỂ LỌC
+    // JOIN BẢNG ĐỂ LỌC VÀ SẮP XẾP
     $joinSql = "LEFT JOIN product_tags pt ON p.id = pt.product_id 
-                LEFT JOIN tags t ON pt.tag_id = t.id";
+                LEFT JOIN tags t ON pt.tag_id = t.id
+                LEFT JOIN admins a ON p.user_id = a.id"; // Join bảng Admin để lấy Role
 
     // 1. Đếm tổng
     if (!$isAjax) {
@@ -83,12 +76,15 @@ try {
         if ($page > $totalPages && $totalPages > 0) $page = $totalPages;
     }
 
-    // 2. Lấy dữ liệu
-    $sql = "SELECT DISTINCT p.* 
+    // 2. Lấy dữ liệu (SẮP XẾP CHUẨN)
+    $sql = "SELECT DISTINCT p.*, a.role 
             FROM products p 
             $joinSql
             $whereSql 
-            ORDER BY p.is_featured DESC, p.created_at DESC 
+            ORDER BY 
+                p.is_featured DESC,  -- 1. Acc Ghim lên đầu
+                a.role DESC,         -- 2. Boss (1) trên, CTV (0) dưới
+                p.created_at DESC    -- 3. Mới nhất lên trên
             LIMIT $limit OFFSET $offset";
 
     $stmt = $conn->prepare($sql);
@@ -107,9 +103,8 @@ function renderProductCard($p, $viewMode)
     $thumbUrl = 'uploads/' . $p['thumb'];
     if (empty($p['thumb']) || !file_exists($thumbUrl)) $thumbUrl = 'assets/images/no-image.jpg';
 
-    $badgeOrder = ($p['is_order'] == 1)
-        ? '<span class="badge bg-white text-danger position-absolute top-0 end-0 m-2 shadow-sm" style="z-index:3; font-size:11px; border:1px solid #dc3545">✈️ ORDER</span>'
-        : '';
+    // Badge Order (Hiện nếu là Acc CTV)
+    $badgeOrder = '';
 
     $badgeRent = ($viewMode == 'rent')
         ? '<span class="badge bg-primary position-absolute top-0 end-0 m-2 shadow-sm" style="z-index:3; font-size:11px;">THUÊ</span>'
@@ -159,7 +154,6 @@ function renderProductCard($p, $viewMode)
 <?php
 }
 
-// === AJAX RESPONSE ===
 if ($isAjax) {
     if (count($products) > 0) {
         foreach ($products as $p) renderProductCard($p, $viewMode);
@@ -169,12 +163,10 @@ if ($isAjax) {
     exit;
 }
 
-// === GIAO DIỆN CHÍNH ===
 $pageTitle = $pageTitleText . " | TRỌNG 2K8 SHOP";
 require_once 'includes/header.php';
 ?>
 
-<!-- CONFIG JS -->
 <script>
 window.totalPages = <?= $totalPages ?>;
 window.currentPage = <?= $page ?>;
@@ -222,10 +214,10 @@ window.pageLimit = <?= $limit ?>;
         </div>
     </div>
 
-    <!-- FILTER SECTION -->
+    <!-- FILTER SECTION (ĐÃ XÓA NÚT ACC ORDER) -->
     <div class="filter-section">
         <a href="?view=<?= $viewMode ?>"
-            class="filter-pill <?= (!isset($_GET['min']) && empty($keyword) && $isOrder == 0 && empty($tagIds)) ? 'active' : '' ?>">Tất
+            class="filter-pill <?= (!isset($_GET['min']) && empty($keyword) && empty($tagIds)) ? 'active' : '' ?>">Tất
             cả</a>
 
         <?php if ($viewMode == 'shop'): ?>
@@ -239,10 +231,6 @@ window.pageLimit = <?= $limit ?>;
         <a href="?view=shop&min=40000000&max=60000000" class="filter-pill <?= checkActive(40000000, 60000000) ?>">40m -
             60m</a>
         <a href="?view=shop&min=60000000" class="filter-pill <?= checkActive(60000000, null) ?>">Trên 60m</a>
-
-        <a href="?view=shop&order=1" class="filter-pill btn-order <?= ($isOrder == 1) ? 'active' : '' ?>">
-            <i class="ph-fill ph-airplane-tilt"></i> Acc Order
-        </a>
         <?php else: ?>
         <a href="?view=rent&min=0&max=100000" class="filter-pill <?= checkActive(0, 100000) ?>">Dưới 100k</a>
         <a href="?view=rent&min=100000&max=200000" class="filter-pill <?= checkActive(100000, 200000) ?>">100k -
@@ -264,13 +252,7 @@ window.pageLimit = <?= $limit ?>;
         <div class="col-12 empty-state-box">
             <div class="text-center">
                 <i class="ph-duotone ph-magnifying-glass text-secondary opacity-25" style="font-size: 80px;"></i>
-                <p class="text-secondary fw-bold mt-3 mb-4">
-                    <?php if ($isOrder == 1): ?>
-                    Chưa có Acc Order nào!
-                    <?php else: ?>
-                    Không tìm thấy Acc phù hợp!
-                    <?php endif; ?>
-                </p>
+                <p class="text-secondary fw-bold mt-3 mb-4">Không tìm thấy Acc phù hợp!</p>
                 <a href="?view=<?= $viewMode ?>" class="btn btn-warning text-white rounded-pill px-4 fw-bold shadow-sm">
                     <i class="ph-bold ph-arrow-counter-clockwise me-1"></i> Xem tất cả
                 </a>
@@ -279,13 +261,10 @@ window.pageLimit = <?= $limit ?>;
         <?php endif; ?>
     </div>
 
-    <!-- PHÂN TRANG -->
     <?php if ($totalPages > 1): ?>
     <div class="pagination-container-modern">
         <div class="pagi-nav-btn js-prev-btn <?= ($page <= 1) ? 'disabled' : '' ?>"
-            onclick="<?= ($page > 1) ? "goToPage($page - 1)" : "" ?>">
-            <i class="ph-bold ph-caret-left"></i>
-        </div>
+            onclick="<?= ($page > 1) ? "goToPage($page - 1)" : "" ?>"><i class="ph-bold ph-caret-left"></i></div>
         <div class="position-relative">
             <div class="pagi-main-btn" id="pagiTrigger" onclick="togglePaginationGrid()">
                 <span>Trang <span id="lblCurrentPage"><?= $page ?></span> / <?= $totalPages ?></span>
@@ -301,15 +280,13 @@ window.pageLimit = <?= $limit ?>;
             </div>
         </div>
         <div class="pagi-nav-btn js-next-btn <?= ($page >= $totalPages) ? 'disabled' : '' ?>"
-            onclick="<?= ($page < $totalPages) ? "goToPage($page + 1)" : "" ?>">
-            <i class="ph-bold ph-caret-right"></i>
+            onclick="<?= ($page < $totalPages) ? "goToPage($page + 1)" : "" ?>"><i class="ph-bold ph-caret-right"></i>
         </div>
     </div>
     <?php endif; ?>
 
 </div>
 
-<!-- SCRIPT HELPER -->
 <script>
 function copyCode(text) {
     navigator.clipboard.writeText(text).then(function() {

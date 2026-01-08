@@ -1,30 +1,22 @@
 <?php
-// admin/add.php - UPDATE: GIAO DIỆN 2 CỘT + CHỌN TAG + ACC ORDER
+// admin/add.php - BẢN SIÊU GỌN: CHỈ HIỆN 1 LIST TAG
 require_once 'auth.php';
 require_once '../includes/config.php';
 
 $role = $_SESSION['role'] ?? 0;
 $prefix = $_SESSION['prefix'] ?? '';
 
-// 1. LẤY DANH SÁCH TAG TỪ DB ĐỂ HIỆN RA CHO CHỌN
-$stmtTags = $conn->query("SELECT * FROM tags ORDER BY group_type ASC, id DESC");
+// Lấy toàn bộ Tag (Bape, Sảnh Xe...)
+$stmtTags = $conn->query("SELECT * FROM tags ORDER BY id ASC");
 $allTags = $stmtTags->fetchAll();
-
-// Phân nhóm tag cho dễ nhìn
-$groupedTags = ['sung' => [], 'xe' => [], 'ao' => [], 'highlight' => [], 'other' => []];
-foreach ($allTags as $tag) {
-    $g = $tag['group_type'];
-    if (isset($groupedTags[$g])) $groupedTags[$g][] = $tag;
-    else $groupedTags['other'][] = $tag;
-}
 ?>
 <!DOCTYPE html>
 <html lang="vi">
 
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Đăng Acc PUBG Mới</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Đăng Acc Mới</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <script src="https://unpkg.com/@phosphor-icons/web"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/Sortable/1.15.0/Sortable.min.js"></script>
@@ -41,7 +33,7 @@ foreach ($allTags as $tag) {
             <a href="index.php" class="menu-item"><i class="ph-duotone ph-squares-four"></i> Tổng Quan</a>
             <a href="add.php" class="menu-item active"><i class="ph-duotone ph-plus-circle"></i> Đăng Acc Mới</a>
             <?php if ($role == 1): ?>
-            <a href="tags.php" class="menu-item"><i class="ph-duotone ph-tag"></i> Quản lý Tag (Súng/Xe)</a>
+            <a href="tags.php" class="menu-item"><i class="ph-duotone ph-tag"></i> Quản lý Tag</a>
             <a href="users.php" class="menu-item"><i class="ph-duotone ph-users"></i> Nhân viên</a>
             <?php endif; ?>
             <a href="change_pass.php" class="menu-item"><i class="ph-duotone ph-lock-key"></i> Đổi mật khẩu</a>
@@ -60,13 +52,9 @@ foreach ($allTags as $tag) {
         <form action="process.php" method="POST" enctype="multipart/form-data" id="addForm">
             <div class="row g-4">
 
-                <!-- CỘT TRÁI: THÔNG TIN CƠ BẢN -->
-                <div class="col-12 col-lg-8">
+                <!-- CỘT TRÁI: THÔNG TIN -->
+                <div class="col-12 col-lg-8 order-2 order-lg-1">
                     <div class="form-card mb-4">
-                        <h6 class="fw-bold text-uppercase text-secondary mb-3" style="font-size: 12px;">1. Thông tin Acc
-                        </h6>
-
-                        <!-- NHẬP MÃ SỐ -->
                         <div class="mb-4">
                             <label class="form-label fw-bold">Mã Acc / Tiêu đề <span
                                     class="text-danger">*</span></label>
@@ -75,23 +63,18 @@ foreach ($allTags as $tag) {
                                 <span class="input-group-text bg-light fw-bold text-secondary"><?= $prefix ?></span>
                                 <?php endif; ?>
                                 <input type="text" name="title" class="form-control custom-input"
-                                    placeholder="Nhập mã hoặc tiêu đề ngắn (VD: Acc full Băng)">
+                                    placeholder="Nhập mã...">
                             </div>
-                            <small class="text-secondary fst-italic mt-1 d-block">Để trống sẽ tự động tạo mã số.</small>
                         </div>
 
-                        <!-- GHI CHÚ -->
                         <div class="mb-4">
                             <label class="form-label fw-bold text-primary"><i class="ph-bold ph-lock-key"></i> Ghi chú
                                 nội bộ</label>
                             <textarea name="private_note" class="form-control custom-input" rows="2"
-                                placeholder="Giá gốc, Tên CTV, SĐT chủ acc..."></textarea>
+                                placeholder="Giá gốc..."></textarea>
                         </div>
 
                         <!-- GIÁ BÁN -->
-                        <label class="form-label mb-3 fw-bold text-uppercase text-secondary" style="font-size: 12px;">2.
-                            Giá Bán</label>
-
                         <div class="mode-switch-group">
                             <div class="d-flex align-items-center gap-3">
                                 <div class="bg-warning bg-opacity-10 p-2 rounded-3 text-warning"><i
@@ -114,7 +97,7 @@ foreach ($allTags as $tag) {
                             </div>
                         </div>
 
-                        <!-- CHO THUÊ (MẶC ĐỊNH TẮT) -->
+                        <!-- CHO THUÊ -->
                         <div class="mode-switch-group mt-3 opacity-75">
                             <div class="d-flex align-items-center gap-3">
                                 <div class="bg-info bg-opacity-10 p-2 rounded-3 text-info"><i
@@ -143,14 +126,13 @@ foreach ($allTags as $tag) {
                                 </div>
                             </div>
                         </div>
-
                     </div>
                 </div>
 
-                <!-- CỘT PHẢI: ẢNH & ĐẶC ĐIỂM -->
-                <div class="col-12 col-lg-4">
+                <!-- CỘT PHẢI: ẢNH & TAG -->
+                <div class="col-12 col-lg-4 order-1 order-lg-2">
 
-                    <!-- 1. UPLOAD ẢNH -->
+                    <!-- 1. ẢNH -->
                     <div class="form-card mb-4 sticky-top" style="top: 20px; z-index: 2;">
                         <label class="form-label fw-bold text-uppercase text-secondary" style="font-size: 12px;">Ảnh Sản
                             Phẩm</label>
@@ -162,93 +144,27 @@ foreach ($allTags as $tag) {
                         <div id="imageGrid" class="sortable-grid"></div>
                     </div>
 
-                    <!-- 2. LOẠI HÀNG (ORDER / CÓ SẴN) -->
-                    <div class="form-card mb-4 bg-light border-0">
-                        <div class="form-check form-switch">
-                            <input class="form-check-input" type="checkbox" name="is_order" value="1" id="checkOrder"
-                                style="width: 40px; height: 20px;">
-                            <label class="form-check-label fw-bold text-danger ms-2" for="checkOrder">✈️ Acc Order / Ký
-                                Gửi</label>
-                        </div>
-                        <small class="text-secondary ms-1">Tích vào nếu là acc CTV (Chưa có sẵn).</small>
-                    </div>
-
-                    <!-- 3. CHỌN TAG (ĐẶC ĐIỂM) -->
+                    <!-- 3. TAGS (ĐÃ LÀM GỌN) -->
                     <div class="form-card">
                         <label class="form-label fw-bold text-uppercase text-secondary mb-3"
                             style="font-size: 12px;">🏷️ Đặc điểm nổi bật</label>
+                        <div class="tag-grid-wrapper">
+                            <?php foreach ($allTags as $t):
+                                // Logic check cho edit.php (nếu add.php thì bỏ dòng này hoặc để trống $isChecked)
+                                $isChecked = (isset($currentTags) && in_array($t['id'], $currentTags)) ? 'checked' : '';
+                            ?>
 
-                        <!-- SÚNG LAB -->
-                        <?php if (!empty($groupedTags['sung'])): ?>
-                        <div class="mb-3">
-                            <label class="d-block fw-bold small text-primary mb-2">🔥 Súng & Lab</label>
-                            <div class="d-flex flex-wrap gap-2">
-                                <?php foreach ($groupedTags['sung'] as $t): ?>
-                                <div class="form-check">
-                                    <input class="form-check-input" type="checkbox" name="tags[]"
-                                        value="<?= $t['id'] ?>" id="tag_<?= $t['id'] ?>">
-                                    <label class="form-check-label small"
-                                        for="tag_<?= $t['id'] ?>"><?= $t['name'] ?></label>
-                                </div>
-                                <?php endforeach; ?>
+                            <!-- Thêm class 'tag-option-card' vào đây -->
+                            <div class="form-check tag-option-card">
+                                <input class="form-check-input" type="checkbox" name="tags[]" value="<?= $t['id'] ?>"
+                                    id="tag_<?= $t['id'] ?>" <?= $isChecked ?>>
+                                <label class="form-check-label" for="tag_<?= $t['id'] ?>">
+                                    <?= htmlspecialchars($t['name']) ?>
+                                </label>
                             </div>
-                        </div>
-                        <hr class="opacity-25">
-                        <?php endif; ?>
 
-                        <!-- XE -->
-                        <?php if (!empty($groupedTags['xe'])): ?>
-                        <div class="mb-3">
-                            <label class="d-block fw-bold small text-primary mb-2">🏎️ Siêu Xe</label>
-                            <div class="d-flex flex-wrap gap-2">
-                                <?php foreach ($groupedTags['xe'] as $t): ?>
-                                <div class="form-check">
-                                    <input class="form-check-input" type="checkbox" name="tags[]"
-                                        value="<?= $t['id'] ?>" id="tag_<?= $t['id'] ?>">
-                                    <label class="form-check-label small"
-                                        for="tag_<?= $t['id'] ?>"><?= $t['name'] ?></label>
-                                </div>
-                                <?php endforeach; ?>
-                            </div>
+                            <?php endforeach; ?>
                         </div>
-                        <hr class="opacity-25">
-                        <?php endif; ?>
-
-                        <!-- X-SUIT -->
-                        <?php if (!empty($groupedTags['ao'])): ?>
-                        <div class="mb-3">
-                            <label class="d-block fw-bold small text-primary mb-2">🧥 X-Suit & Đồ</label>
-                            <div class="d-flex flex-wrap gap-2">
-                                <?php foreach ($groupedTags['ao'] as $t): ?>
-                                <div class="form-check">
-                                    <input class="form-check-input" type="checkbox" name="tags[]"
-                                        value="<?= $t['id'] ?>" id="tag_<?= $t['id'] ?>">
-                                    <label class="form-check-label small"
-                                        for="tag_<?= $t['id'] ?>"><?= $t['name'] ?></label>
-                                </div>
-                                <?php endforeach; ?>
-                            </div>
-                        </div>
-                        <?php endif; ?>
-
-                        <!-- DANH MỤC CHÍNH (Sảnh xe...) -->
-                        <?php if (!empty($groupedTags['highlight'])): ?>
-                        <hr class="opacity-25">
-                        <div class="mb-3 p-2 bg-warning bg-opacity-10 rounded">
-                            <label class="d-block fw-bold small text-dark mb-2">🌟 Nhóm Danh Mục (Menu Đáy)</label>
-                            <div class="d-flex flex-wrap gap-2">
-                                <?php foreach ($groupedTags['highlight'] as $t): ?>
-                                <div class="form-check">
-                                    <input class="form-check-input" type="checkbox" name="tags[]"
-                                        value="<?= $t['id'] ?>" id="tag_<?= $t['id'] ?>">
-                                    <label class="form-check-label small fw-bold"
-                                        for="tag_<?= $t['id'] ?>"><?= $t['name'] ?></label>
-                                </div>
-                                <?php endforeach; ?>
-                            </div>
-                        </div>
-                        <?php endif; ?>
-
                     </div>
 
                     <div class="d-grid gap-2 mt-4">

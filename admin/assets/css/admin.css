@@ -199,3 +199,57 @@
     .desktop-table td:nth-child(5),
     .desktop-table td:nth-child(6) { display: none !important; }
 }
+/* --- STYLE CHO KHỐI CHỌN TAG --- */
+
+/* Lưới chia 2 cột */
+.tag-grid-wrapper {
+    display: grid;
+    grid-template-columns: 1fr 1fr; /* Chia đôi không gian */
+    gap: 10px;
+}
+
+/* Biến mỗi checkbox thành một cái hộp đẹp */
+.tag-option-card {
+    background: #fff;
+    border: 1px solid #e5e7eb;
+    border-radius: 8px;
+    padding: 10px 12px;
+    display: flex;
+    align-items: center;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    box-shadow: 0 1px 2px rgba(0,0,0,0.02);
+}
+
+/* Hiệu ứng khi di chuột vào */
+.tag-option-card:hover {
+    background: #f9fafb;
+    border-color: #1877F2;
+    transform: translateY(-1px);
+}
+
+/* Checkbox to lên chút cho dễ bấm */
+.tag-option-card .form-check-input {
+    width: 20px;
+    height: 20px;
+    margin-right: 10px;
+    margin-top: 0;
+    cursor: pointer;
+    border: 2px solid #d1d5db;
+}
+
+/* Khi tích chọn thì ô xanh lên */
+.tag-option-card .form-check-input:checked {
+    background-color: #1877F2;
+    border-color: #1877F2;
+}
+
+/* Chữ đậm lên */
+.tag-option-card label {
+    font-size: 13px;
+    font-weight: 700;
+    color: #374151;
+    cursor: pointer;
+    user-select: none; /* Chống bôi đen text khi bấm liên tục */
+    width: 100%; /* Để bấm vào chữ cũng ăn */
+}

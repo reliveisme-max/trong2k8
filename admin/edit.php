@@ -1,44 +1,32 @@
 <?php
-// admin/edit.php - UPDATE: CHIA CỘT + LOAD TAG CŨ + TRẠNG THÁI ORDER
+// admin/edit.php - BẢN SIÊU GỌN
 require_once 'auth.php';
 require_once '../includes/config.php';
 require_once '../includes/functions.php';
 
-if (!isset($_GET['id']) || !is_numeric($_GET['id'])) {
+if (!isset($_GET['id'])) {
     header("Location: index.php");
     exit;
 }
 $id = (int)$_GET['id'];
 
-// 1. LẤY THÔNG TIN SẢN PHẨM
-$stmt = $conn->prepare("SELECT * FROM products WHERE id = :id");
-$stmt->execute([':id' => $id]);
-$product = $stmt->fetch();
-
+// Lấy thông tin
+$product = $conn->prepare("SELECT * FROM products WHERE id = :id");
+$product->execute([':id' => $id]);
+$product = $product->fetch();
 if (!$product) die("Acc không tồn tại!");
 
-// 2. LẤY DANH SÁCH TAG CỦA ACC NÀY (Để tí nữa check vào ô)
-$stmtProTags = $conn->prepare("SELECT tag_id FROM product_tags WHERE product_id = :id");
-$stmtProTags->execute([':id' => $id]);
-$currentTags = $stmtProTags->fetchAll(PDO::FETCH_COLUMN); // Mảng các ID tag đã chọn: [1, 5, 8...]
+// Lấy Tag đã chọn
+$currentTags = $conn->prepare("SELECT tag_id FROM product_tags WHERE product_id = :id");
+$currentTags->execute([':id' => $id]);
+$currentTags = $currentTags->fetchAll(PDO::FETCH_COLUMN);
 
-// 3. LẤY TOÀN BỘ TAG TRONG HỆ THỐNG (Để hiển thị list)
-$stmtAllTags = $conn->query("SELECT * FROM tags ORDER BY group_type ASC, id DESC");
-$allTags = $stmtAllTags->fetchAll();
+// Lấy toàn bộ Tag
+$allTags = $conn->query("SELECT * FROM tags ORDER BY id ASC")->fetchAll();
 
-// Phân nhóm tag
-$groupedTags = ['sung' => [], 'xe' => [], 'ao' => [], 'highlight' => [], 'other' => []];
-foreach ($allTags as $tag) {
-    $g = $tag['group_type'];
-    if (isset($groupedTags[$g])) $groupedTags[$g][] = $tag;
-    else $groupedTags['other'][] = $tag;
-}
-
-// Xử lý dữ liệu hiển thị
 $isSell = ($product['price'] > 0);
 $isRent = ($product['price_rent'] > 0);
 $gallery = json_decode($product['gallery'], true);
-if (!is_array($gallery)) $gallery = [];
 ?>
 
 <!DOCTYPE html>
@@ -46,7 +34,7 @@ if (!is_array($gallery)) $gallery = [];
 
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Sửa Acc #<?= $id ?></title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <script src="https://unpkg.com/@phosphor-icons/web"></script>
@@ -74,7 +62,6 @@ if (!is_array($gallery)) $gallery = [];
                     class="ph-bold ph-arrow-left"></i></a>
             <div>
                 <h4 class="m-0 fw-bold text-dark">Sửa Acc #<?= $id ?></h4>
-                <small class="text-secondary">Cập nhật thông tin & Tag</small>
             </div>
         </div>
 
@@ -82,16 +69,11 @@ if (!is_array($gallery)) $gallery = [];
             <input type="hidden" name="id" value="<?= $id ?>">
 
             <div class="row g-4">
-
-                <!-- CỘT TRÁI: THÔNG TIN CƠ BẢN -->
-                <div class="col-12 col-lg-8">
+                <div class="col-12 col-lg-8 order-2 order-lg-1">
                     <div class="form-card mb-4">
-
-                        <!-- Trạng thái ẩn/hiện -->
                         <div
                             class="d-flex justify-content-between align-items-center mb-4 p-3 bg-light rounded-4 border">
-                            <label class="fw-bold m-0 text-uppercase text-secondary" style="font-size: 13px;">Trạng thái
-                                hiển thị</label>
+                            <label class="fw-bold m-0 text-secondary">TRẠNG THÁI HIỂN THỊ</label>
                             <div class="form-check form-switch">
                                 <input class="form-check-input" type="checkbox" name="status" value="1"
                                     <?= $product['status'] == 1 ? 'checked' : '' ?> style="width: 40px; height: 20px;">
@@ -106,8 +88,7 @@ if (!is_array($gallery)) $gallery = [];
                         </div>
 
                         <div class="mb-4">
-                            <label class="form-label fw-bold text-primary"><i class="ph-bold ph-lock-key"></i> Ghi chú
-                                nội bộ</label>
+                            <label class="form-label fw-bold text-primary">Ghi chú nội bộ</label>
                             <textarea name="private_note" class="form-control custom-input"
                                 rows="2"><?= htmlspecialchars($product['private_note'] ?? '') ?></textarea>
                         </div>
@@ -124,10 +105,8 @@ if (!is_array($gallery)) $gallery = [];
                             <div><input class="custom-toggle" type="checkbox" id="switchSell"
                                     <?= $isSell ? 'checked' : '' ?> onchange="toggleSections()"></div>
                         </div>
-
                         <div id="sellSection" class="mb-4 ps-4 border-start border-4 border-warning"
                             style="<?= $isSell ? '' : 'display:none' ?>">
-                            <label class="label-highlight">Giá Bán (VNĐ)</label>
                             <div class="input-group">
                                 <span class="input-group-text bg-white border-end-0 fw-bold text-success">₫</span>
                                 <input type="text" name="price"
@@ -149,10 +128,8 @@ if (!is_array($gallery)) $gallery = [];
                             <div><input class="custom-toggle" type="checkbox" id="switchRent"
                                     <?= $isRent ? 'checked' : '' ?> onchange="toggleSections()"></div>
                         </div>
-
                         <div id="rentSection" class="mb-4 ps-4 border-start border-4 border-info"
                             style="<?= $isRent ? '' : 'display:none' ?>">
-                            <label class="label-highlight text-info">Giá Thuê (VNĐ)</label>
                             <div class="row g-2">
                                 <div class="col-8">
                                     <input type="text" name="price_rent" class="form-control custom-input"
@@ -167,14 +144,10 @@ if (!is_array($gallery)) $gallery = [];
                                 </div>
                             </div>
                         </div>
-
                     </div>
                 </div>
 
-                <!-- CỘT PHẢI: ẢNH & TAG -->
-                <div class="col-12 col-lg-4">
-
-                    <!-- 1. ẢNH -->
+                <div class="col-12 col-lg-4 order-1 order-lg-2">
                     <div class="form-card mb-4 sticky-top" style="top: 20px; z-index: 2;">
                         <label class="form-label fw-bold text-uppercase text-secondary" style="font-size: 12px;">Ảnh Sản
                             Phẩm</label>
@@ -186,100 +159,26 @@ if (!is_array($gallery)) $gallery = [];
                         <div id="imageGrid" class="sortable-grid"></div>
                     </div>
 
-                    <!-- 2. TRẠNG THÁI ORDER (CHECKBOX) -->
-                    <div class="form-card mb-4 bg-light border-0">
-                        <div class="form-check form-switch">
-                            <input class="form-check-input" type="checkbox" name="is_order" value="1" id="checkOrder"
-                                style="width: 40px; height: 20px;" <?= $product['is_order'] == 1 ? 'checked' : '' ?>>
-                            <label class="form-check-label fw-bold text-danger ms-2" for="checkOrder">✈️ Acc Order / Ký
-                                Gửi</label>
-                        </div>
-                    </div>
-
-                    <!-- 3. DANH SÁCH TAG (CHECKED NẾU ĐÃ CÓ) -->
                     <div class="form-card">
                         <label class="form-label fw-bold text-uppercase text-secondary mb-3"
                             style="font-size: 12px;">🏷️ Đặc điểm nổi bật</label>
+                        <div class="tag-grid-wrapper">
+                            <?php foreach ($allTags as $t):
+                                // Logic check cho edit.php (nếu add.php thì bỏ dòng này hoặc để trống $isChecked)
+                                $isChecked = (isset($currentTags) && in_array($t['id'], $currentTags)) ? 'checked' : '';
+                            ?>
 
-                        <!-- Súng Lab -->
-                        <?php if (!empty($groupedTags['sung'])): ?>
-                        <div class="mb-3">
-                            <label class="d-block fw-bold small text-primary mb-2">🔥 Súng & Lab</label>
-                            <div class="d-flex flex-wrap gap-2">
-                                <?php foreach ($groupedTags['sung'] as $t):
-                                        $isChecked = in_array($t['id'], $currentTags) ? 'checked' : '';
-                                    ?>
-                                <div class="form-check">
-                                    <input class="form-check-input" type="checkbox" name="tags[]"
-                                        value="<?= $t['id'] ?>" id="tag_<?= $t['id'] ?>" <?= $isChecked ?>>
-                                    <label class="form-check-label small"
-                                        for="tag_<?= $t['id'] ?>"><?= $t['name'] ?></label>
-                                </div>
-                                <?php endforeach; ?>
+                            <!-- Thêm class 'tag-option-card' vào đây -->
+                            <div class="form-check tag-option-card">
+                                <input class="form-check-input" type="checkbox" name="tags[]" value="<?= $t['id'] ?>"
+                                    id="tag_<?= $t['id'] ?>" <?= $isChecked ?>>
+                                <label class="form-check-label" for="tag_<?= $t['id'] ?>">
+                                    <?= htmlspecialchars($t['name']) ?>
+                                </label>
                             </div>
-                        </div>
-                        <hr class="opacity-25">
-                        <?php endif; ?>
 
-                        <!-- Xe -->
-                        <?php if (!empty($groupedTags['xe'])): ?>
-                        <div class="mb-3">
-                            <label class="d-block fw-bold small text-primary mb-2">🏎️ Siêu Xe</label>
-                            <div class="d-flex flex-wrap gap-2">
-                                <?php foreach ($groupedTags['xe'] as $t):
-                                        $isChecked = in_array($t['id'], $currentTags) ? 'checked' : '';
-                                    ?>
-                                <div class="form-check">
-                                    <input class="form-check-input" type="checkbox" name="tags[]"
-                                        value="<?= $t['id'] ?>" id="tag_<?= $t['id'] ?>" <?= $isChecked ?>>
-                                    <label class="form-check-label small"
-                                        for="tag_<?= $t['id'] ?>"><?= $t['name'] ?></label>
-                                </div>
-                                <?php endforeach; ?>
-                            </div>
+                            <?php endforeach; ?>
                         </div>
-                        <hr class="opacity-25">
-                        <?php endif; ?>
-
-                        <!-- X-Suit -->
-                        <?php if (!empty($groupedTags['ao'])): ?>
-                        <div class="mb-3">
-                            <label class="d-block fw-bold small text-primary mb-2">🧥 X-Suit & Đồ</label>
-                            <div class="d-flex flex-wrap gap-2">
-                                <?php foreach ($groupedTags['ao'] as $t):
-                                        $isChecked = in_array($t['id'], $currentTags) ? 'checked' : '';
-                                    ?>
-                                <div class="form-check">
-                                    <input class="form-check-input" type="checkbox" name="tags[]"
-                                        value="<?= $t['id'] ?>" id="tag_<?= $t['id'] ?>" <?= $isChecked ?>>
-                                    <label class="form-check-label small"
-                                        for="tag_<?= $t['id'] ?>"><?= $t['name'] ?></label>
-                                </div>
-                                <?php endforeach; ?>
-                            </div>
-                        </div>
-                        <?php endif; ?>
-
-                        <!-- Danh mục chính -->
-                        <?php if (!empty($groupedTags['highlight'])): ?>
-                        <hr class="opacity-25">
-                        <div class="mb-3 p-2 bg-warning bg-opacity-10 rounded">
-                            <label class="d-block fw-bold small text-dark mb-2">🌟 Nhóm Danh Mục</label>
-                            <div class="d-flex flex-wrap gap-2">
-                                <?php foreach ($groupedTags['highlight'] as $t):
-                                        $isChecked = in_array($t['id'], $currentTags) ? 'checked' : '';
-                                    ?>
-                                <div class="form-check">
-                                    <input class="form-check-input" type="checkbox" name="tags[]"
-                                        value="<?= $t['id'] ?>" id="tag_<?= $t['id'] ?>" <?= $isChecked ?>>
-                                    <label class="form-check-label small fw-bold"
-                                        for="tag_<?= $t['id'] ?>"><?= $t['name'] ?></label>
-                                </div>
-                                <?php endforeach; ?>
-                            </div>
-                        </div>
-                        <?php endif; ?>
-
                     </div>
 
                     <div class="d-grid gap-2 mt-4">
@@ -299,12 +198,9 @@ if (!is_array($gallery)) $gallery = [];
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
     <script src="assets/js/pages/product-form.js?v=<?= time() ?>"></script>
-
-    <!-- JS LOAD ẢNH CŨ -->
     <script>
     document.addEventListener('DOMContentLoaded', function() {
         const existingImages = <?= json_encode($gallery) ?>;
-        // Gọi hàm từ file JS chung để hiện ảnh cũ
         initExistingImages(existingImages);
     });
     </script>

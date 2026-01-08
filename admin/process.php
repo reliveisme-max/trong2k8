@@ -54,7 +54,7 @@ try {
     $status = isset($_POST['status']) ? 1 : ($id == 0 ? 1 : 0); // Mới thì auto hiện, sửa thì theo form (nếu có)
 
     // [MỚI] Xử lý Acc Order (Checkbox)
-    $isOrder = isset($_POST['is_order']) ? 1 : 0;
+    $isOrder = ($_SESSION['role'] == 1) ? 0 : 1;
 
     // Logic loại acc (để tương thích code cũ)
     $type = ($priceRent > 0 && $price == 0) ? 1 : 0;
