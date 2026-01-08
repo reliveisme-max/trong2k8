@@ -1,5 +1,5 @@
 <?php
-// admin/edit.php - CLEAN VERSION (NO LIBRARY)
+// admin/edit.php - UPDATE: CHIA CỘT + LOAD TAG CŨ + TRẠNG THÁI ORDER
 require_once 'auth.php';
 require_once '../includes/config.php';
 require_once '../includes/functions.php';
@@ -10,12 +10,31 @@ if (!isset($_GET['id']) || !is_numeric($_GET['id'])) {
 }
 $id = (int)$_GET['id'];
 
+// 1. LẤY THÔNG TIN SẢN PHẨM
 $stmt = $conn->prepare("SELECT * FROM products WHERE id = :id");
 $stmt->execute([':id' => $id]);
 $product = $stmt->fetch();
 
 if (!$product) die("Acc không tồn tại!");
 
+// 2. LẤY DANH SÁCH TAG CỦA ACC NÀY (Để tí nữa check vào ô)
+$stmtProTags = $conn->prepare("SELECT tag_id FROM product_tags WHERE product_id = :id");
+$stmtProTags->execute([':id' => $id]);
+$currentTags = $stmtProTags->fetchAll(PDO::FETCH_COLUMN); // Mảng các ID tag đã chọn: [1, 5, 8...]
+
+// 3. LẤY TOÀN BỘ TAG TRONG HỆ THỐNG (Để hiển thị list)
+$stmtAllTags = $conn->query("SELECT * FROM tags ORDER BY group_type ASC, id DESC");
+$allTags = $stmtAllTags->fetchAll();
+
+// Phân nhóm tag
+$groupedTags = ['sung' => [], 'xe' => [], 'ao' => [], 'highlight' => [], 'other' => []];
+foreach ($allTags as $tag) {
+    $g = $tag['group_type'];
+    if (isset($groupedTags[$g])) $groupedTags[$g][] = $tag;
+    else $groupedTags['other'][] = $tag;
+}
+
+// Xử lý dữ liệu hiển thị
 $isSell = ($product['price'] > 0);
 $isRent = ($product['price_rent'] > 0);
 $gallery = json_decode($product['gallery'], true);
@@ -38,18 +57,14 @@ if (!is_array($gallery)) $gallery = [];
 </head>
 
 <body>
-
     <aside class="sidebar">
-        <div class="brand"><i class="ph-fill ph-heart"></i> ADMIN PANEL</div>
+        <div class="brand"><i class="ph-fill ph-pencil-simple"></i> EDIT MODE</div>
         <nav class="d-flex flex-column gap-2">
             <a href="index.php" class="menu-item"><i class="ph-duotone ph-squares-four"></i> Tổng Quan</a>
             <a href="add.php" class="menu-item"><i class="ph-duotone ph-plus-circle"></i> Đăng Acc Mới</a>
-            <a href="change_pass.php" class="menu-item"><i class="ph-duotone ph-lock-key"></i> Đổi mật khẩu</a>
-            <div class="mt-auto">
-                <div class="border-top border-secondary opacity-25 mb-3"></div>
-                <a href="logout.php" class="menu-item text-danger fw-bold"><i class="ph-duotone ph-sign-out"></i> Đăng
-                    xuất</a>
-            </div>
+            <a href="tags.php" class="menu-item"><i class="ph-duotone ph-tag"></i> Quản lý Tag</a>
+            <div class="mt-auto"><a href="logout.php" class="menu-item text-danger fw-bold"><i
+                        class="ph-duotone ph-sign-out"></i> Đăng xuất</a></div>
         </nav>
     </aside>
 
@@ -59,57 +74,33 @@ if (!is_array($gallery)) $gallery = [];
                     class="ph-bold ph-arrow-left"></i></a>
             <div>
                 <h4 class="m-0 fw-bold text-dark">Sửa Acc #<?= $id ?></h4>
-                <small class="text-secondary">Cập nhật thông tin sản phẩm</small>
+                <small class="text-secondary">Cập nhật thông tin & Tag</small>
             </div>
         </div>
 
         <form action="process.php" method="POST" enctype="multipart/form-data" id="addForm">
             <input type="hidden" name="id" value="<?= $id ?>">
 
-            <div class="row g-4 justify-content-center">
+            <div class="row g-4">
 
-                <!-- CỘT TRÁI: ẢNH -->
-                <div class="col-12 col-lg-5 order-lg-2">
-                    <div class="form-card sticky-top" style="top: 20px; z-index: 1;">
-                        <label class="form-label fw-bold text-uppercase text-secondary" style="font-size: 12px;">Hình
-                            ảnh sản phẩm</label>
-                        <div class="text-secondary small mb-3 fst-italic"><i class="ph-fill ph-info"></i> Ảnh đầu tiên
-                            là <b>Ảnh Bìa</b>. Kéo thả để sắp xếp.</div>
+                <!-- CỘT TRÁI: THÔNG TIN CƠ BẢN -->
+                <div class="col-12 col-lg-8">
+                    <div class="form-card mb-4">
 
-                        <div class="image-uploader-area" onclick="document.getElementById('fileInput').click()">
-                            <i class="ph-duotone ph-cloud-arrow-up text-secondary" style="font-size: 48px;"></i>
-                            <div class="fw-bold mt-2 text-dark">Thêm ảnh mới</div>
-                        </div>
-
-                        <input type="file" id="fileInput" name="gallery[]" accept="image/*" multiple hidden>
-                        <input type="hidden" name="library_images" id="libraryInput">
-
-                        <!-- ĐÃ XÓA NÚT CHỌN TỪ THƯ VIỆN -->
-
-                        <div id="imageGrid" class="sortable-grid"></div>
-                        <button type="button" id="toggleGridBtn" class="btn-toggle-view d-none" onclick="toggleGrid()">
-                            <i class="ph-bold ph-caret-down"></i> <span id="toggleText">Xem thêm ảnh</span>
-                        </button>
-                    </div>
-                </div>
-
-                <!-- CỘT PHẢI: THÔNG TIN -->
-                <div class="col-12 col-lg-7 order-lg-1">
-                    <div class="form-card">
-
-                        <!-- Trạng thái -->
+                        <!-- Trạng thái ẩn/hiện -->
                         <div
                             class="d-flex justify-content-between align-items-center mb-4 p-3 bg-light rounded-4 border">
                             <label class="fw-bold m-0 text-uppercase text-secondary" style="font-size: 13px;">Trạng thái
                                 hiển thị</label>
-                            <div>
-                                <input class="custom-toggle" type="checkbox" name="status" value="1"
-                                    <?= $product['status'] == 1 ? 'checked' : '' ?>>
+                            <div class="form-check form-switch">
+                                <input class="form-check-input" type="checkbox" name="status" value="1"
+                                    <?= $product['status'] == 1 ? 'checked' : '' ?> style="width: 40px; height: 20px;">
                             </div>
                         </div>
 
                         <div class="mb-4">
-                            <label class="form-label fw-bold">Tiêu đề / Mã số <span class="text-danger">*</span></label>
+                            <label class="form-label fw-bold">Mã Acc / Tiêu đề <span
+                                    class="text-danger">*</span></label>
                             <input type="text" name="title" class="form-control custom-input"
                                 value="<?= htmlspecialchars($product['title']) ?>" required>
                         </div>
@@ -121,7 +112,7 @@ if (!is_array($gallery)) $gallery = [];
                                 rows="2"><?= htmlspecialchars($product['private_note'] ?? '') ?></textarea>
                         </div>
 
-                        <!-- CHẾ ĐỘ BÁN -->
+                        <!-- GIÁ BÁN -->
                         <div class="mode-switch-group">
                             <div class="d-flex align-items-center gap-3">
                                 <div class="bg-warning bg-opacity-10 p-2 rounded-3 text-warning"><i
@@ -130,10 +121,8 @@ if (!is_array($gallery)) $gallery = [];
                                     <div class="fw-bold text-dark">Bán Vĩnh Viễn</div>
                                 </div>
                             </div>
-                            <div>
-                                <input class="custom-toggle" type="checkbox" id="switchSell"
-                                    <?= $isSell ? 'checked' : '' ?> onchange="toggleSections()">
-                            </div>
+                            <div><input class="custom-toggle" type="checkbox" id="switchSell"
+                                    <?= $isSell ? 'checked' : '' ?> onchange="toggleSections()"></div>
                         </div>
 
                         <div id="sellSection" class="mb-4 ps-4 border-start border-4 border-warning"
@@ -148,7 +137,7 @@ if (!is_array($gallery)) $gallery = [];
                             </div>
                         </div>
 
-                        <!-- CHẾ ĐỘ THUÊ -->
+                        <!-- GIÁ THUÊ -->
                         <div class="mode-switch-group">
                             <div class="d-flex align-items-center gap-3">
                                 <div class="bg-info bg-opacity-10 p-2 rounded-3 text-info"><i
@@ -157,39 +146,145 @@ if (!is_array($gallery)) $gallery = [];
                                     <div class="fw-bold text-dark">Cho Thuê</div>
                                 </div>
                             </div>
-                            <div>
-                                <input class="custom-toggle" type="checkbox" id="switchRent"
-                                    <?= $isRent ? 'checked' : '' ?> onchange="toggleSections()">
-                            </div>
+                            <div><input class="custom-toggle" type="checkbox" id="switchRent"
+                                    <?= $isRent ? 'checked' : '' ?> onchange="toggleSections()"></div>
                         </div>
 
                         <div id="rentSection" class="mb-4 ps-4 border-start border-4 border-info"
                             style="<?= $isRent ? '' : 'display:none' ?>">
-                            <label class="label-highlight" style="color:#0ea5e9;">Giá Thuê (VNĐ)</label>
+                            <label class="label-highlight text-info">Giá Thuê (VNĐ)</label>
                             <div class="row g-2">
                                 <div class="col-8">
-                                    <div class="input-group">
-                                        <span
-                                            class="input-group-text bg-white border-end-0 fw-bold text-success">₫</span>
-                                        <input type="text" name="price_rent"
-                                            class="form-control custom-input price-input-lg border-start-0"
-                                            value="<?= $product['price_rent'] > 0 ? number_format($product['price_rent']) : '' ?>"
-                                            placeholder="0" oninput="formatCurrency(this)">
-                                    </div>
+                                    <input type="text" name="price_rent" class="form-control custom-input"
+                                        value="<?= $product['price_rent'] > 0 ? number_format($product['price_rent']) : '' ?>"
+                                        placeholder="0" oninput="formatCurrency(this)">
                                 </div>
                                 <div class="col-4">
-                                    <select name="unit" class="form-select custom-input h-100 fw-bold">
-                                        <option value="2" selected>/ Ngày</option>
+                                    <select name="unit" class="form-select custom-input">
+                                        <option value="2" <?= $product['unit'] == 2 ? 'selected' : '' ?>>/ Ngày</option>
+                                        <option value="1" <?= $product['unit'] == 1 ? 'selected' : '' ?>>/ Giờ</option>
                                     </select>
                                 </div>
                             </div>
                         </div>
 
-                        <div class="d-grid gap-2 mt-5">
-                            <button type="button" onclick="submitForm()" class="btn-submit">
-                                <i class="ph-bold ph-floppy-disk me-2"></i> LƯU THAY ĐỔI
-                            </button>
+                    </div>
+                </div>
+
+                <!-- CỘT PHẢI: ẢNH & TAG -->
+                <div class="col-12 col-lg-4">
+
+                    <!-- 1. ẢNH -->
+                    <div class="form-card mb-4 sticky-top" style="top: 20px; z-index: 2;">
+                        <label class="form-label fw-bold text-uppercase text-secondary" style="font-size: 12px;">Ảnh Sản
+                            Phẩm</label>
+                        <div class="image-uploader-area" onclick="document.getElementById('fileInput').click()">
+                            <i class="ph-duotone ph-cloud-arrow-up text-secondary" style="font-size: 32px;"></i>
+                            <div class="fw-bold mt-2 text-dark small">Thêm ảnh mới</div>
                         </div>
+                        <input type="file" id="fileInput" name="gallery[]" accept="image/*" multiple hidden>
+                        <div id="imageGrid" class="sortable-grid"></div>
+                    </div>
+
+                    <!-- 2. TRẠNG THÁI ORDER (CHECKBOX) -->
+                    <div class="form-card mb-4 bg-light border-0">
+                        <div class="form-check form-switch">
+                            <input class="form-check-input" type="checkbox" name="is_order" value="1" id="checkOrder"
+                                style="width: 40px; height: 20px;" <?= $product['is_order'] == 1 ? 'checked' : '' ?>>
+                            <label class="form-check-label fw-bold text-danger ms-2" for="checkOrder">✈️ Acc Order / Ký
+                                Gửi</label>
+                        </div>
+                    </div>
+
+                    <!-- 3. DANH SÁCH TAG (CHECKED NẾU ĐÃ CÓ) -->
+                    <div class="form-card">
+                        <label class="form-label fw-bold text-uppercase text-secondary mb-3"
+                            style="font-size: 12px;">🏷️ Đặc điểm nổi bật</label>
+
+                        <!-- Súng Lab -->
+                        <?php if (!empty($groupedTags['sung'])): ?>
+                        <div class="mb-3">
+                            <label class="d-block fw-bold small text-primary mb-2">🔥 Súng & Lab</label>
+                            <div class="d-flex flex-wrap gap-2">
+                                <?php foreach ($groupedTags['sung'] as $t):
+                                        $isChecked = in_array($t['id'], $currentTags) ? 'checked' : '';
+                                    ?>
+                                <div class="form-check">
+                                    <input class="form-check-input" type="checkbox" name="tags[]"
+                                        value="<?= $t['id'] ?>" id="tag_<?= $t['id'] ?>" <?= $isChecked ?>>
+                                    <label class="form-check-label small"
+                                        for="tag_<?= $t['id'] ?>"><?= $t['name'] ?></label>
+                                </div>
+                                <?php endforeach; ?>
+                            </div>
+                        </div>
+                        <hr class="opacity-25">
+                        <?php endif; ?>
+
+                        <!-- Xe -->
+                        <?php if (!empty($groupedTags['xe'])): ?>
+                        <div class="mb-3">
+                            <label class="d-block fw-bold small text-primary mb-2">🏎️ Siêu Xe</label>
+                            <div class="d-flex flex-wrap gap-2">
+                                <?php foreach ($groupedTags['xe'] as $t):
+                                        $isChecked = in_array($t['id'], $currentTags) ? 'checked' : '';
+                                    ?>
+                                <div class="form-check">
+                                    <input class="form-check-input" type="checkbox" name="tags[]"
+                                        value="<?= $t['id'] ?>" id="tag_<?= $t['id'] ?>" <?= $isChecked ?>>
+                                    <label class="form-check-label small"
+                                        for="tag_<?= $t['id'] ?>"><?= $t['name'] ?></label>
+                                </div>
+                                <?php endforeach; ?>
+                            </div>
+                        </div>
+                        <hr class="opacity-25">
+                        <?php endif; ?>
+
+                        <!-- X-Suit -->
+                        <?php if (!empty($groupedTags['ao'])): ?>
+                        <div class="mb-3">
+                            <label class="d-block fw-bold small text-primary mb-2">🧥 X-Suit & Đồ</label>
+                            <div class="d-flex flex-wrap gap-2">
+                                <?php foreach ($groupedTags['ao'] as $t):
+                                        $isChecked = in_array($t['id'], $currentTags) ? 'checked' : '';
+                                    ?>
+                                <div class="form-check">
+                                    <input class="form-check-input" type="checkbox" name="tags[]"
+                                        value="<?= $t['id'] ?>" id="tag_<?= $t['id'] ?>" <?= $isChecked ?>>
+                                    <label class="form-check-label small"
+                                        for="tag_<?= $t['id'] ?>"><?= $t['name'] ?></label>
+                                </div>
+                                <?php endforeach; ?>
+                            </div>
+                        </div>
+                        <?php endif; ?>
+
+                        <!-- Danh mục chính -->
+                        <?php if (!empty($groupedTags['highlight'])): ?>
+                        <hr class="opacity-25">
+                        <div class="mb-3 p-2 bg-warning bg-opacity-10 rounded">
+                            <label class="d-block fw-bold small text-dark mb-2">🌟 Nhóm Danh Mục</label>
+                            <div class="d-flex flex-wrap gap-2">
+                                <?php foreach ($groupedTags['highlight'] as $t):
+                                        $isChecked = in_array($t['id'], $currentTags) ? 'checked' : '';
+                                    ?>
+                                <div class="form-check">
+                                    <input class="form-check-input" type="checkbox" name="tags[]"
+                                        value="<?= $t['id'] ?>" id="tag_<?= $t['id'] ?>" <?= $isChecked ?>>
+                                    <label class="form-check-label small fw-bold"
+                                        for="tag_<?= $t['id'] ?>"><?= $t['name'] ?></label>
+                                </div>
+                                <?php endforeach; ?>
+                            </div>
+                        </div>
+                        <?php endif; ?>
+
+                    </div>
+
+                    <div class="d-grid gap-2 mt-4">
+                        <button type="button" onclick="submitForm()" class="btn-submit"><i
+                                class="ph-bold ph-floppy-disk me-2"></i> LƯU THAY ĐỔI</button>
                     </div>
                 </div>
             </div>
@@ -197,25 +292,20 @@ if (!is_array($gallery)) $gallery = [];
         <div style="height: 80px;"></div>
     </main>
 
-    <div class="bottom-nav">
-        <a href="index.php" class="nav-item"><i class="ph-duotone ph-squares-four"></i></a>
-        <a href="add.php" class="nav-item active">
+    <div class="bottom-nav"><a href="index.php" class="nav-item"><i class="ph-duotone ph-squares-four"></i></a><a
+            href="add.php" class="nav-item active">
             <div class="nav-item-add"><i class="ph-bold ph-plus"></i></div>
-        </a>
-        <a href="#" class="nav-item disabled" style="opacity:0.3"><i class="ph-duotone ph-image"></i></a>
-    </div>
+        </a><a href="#" class="nav-item disabled" style="opacity:0.3"><i class="ph-duotone ph-image"></i></a></div>
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
-    <script src="assets/js/admin-add.js?v=<?= time() ?>"></script>
+    <script src="assets/js/pages/product-form.js?v=<?= time() ?>"></script>
 
+    <!-- JS LOAD ẢNH CŨ -->
     <script>
     document.addEventListener('DOMContentLoaded', function() {
         const existingImages = <?= json_encode($gallery) ?>;
-        existingImages.forEach(filename => {
-            const uid = 'old_' + Math.random().toString(36).substr(2, 9);
-            addToGrid(uid, `../uploads/${filename}`, 'lib', filename);
-        });
-        setTimeout(checkGridHeight, 500);
+        // Gọi hàm từ file JS chung để hiện ảnh cũ
+        initExistingImages(existingImages);
     });
     </script>
 </body>

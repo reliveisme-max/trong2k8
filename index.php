@@ -1,20 +1,25 @@
 <?php
-// index.php - UPDATE: 3 COLUMNS + NEW RENT FILTERS
+// index.php - FIX ERROR: MIXED NAMED AND POSITIONAL PARAMETERS
 require_once 'includes/config.php';
 require_once 'includes/functions.php';
 
-// 1. CẤU HÌNH LOGIC
+// 1. NHẬN DỮ LIỆU ĐẦU VÀO
 $viewMode = isset($_GET['view']) && $_GET['view'] == 'rent' ? 'rent' : 'shop';
 $keyword  = isset($_GET['q']) ? trim($_GET['q']) : '';
 $page     = isset($_GET['page']) ? (int)$_GET['page'] : 1;
-$limit    = 12; // Số lượng sản phẩm mỗi trang
+$limit    = 12;
 $offset   = ($page - 1) * $limit;
 $isAjax   = isset($_GET['ajax']) && $_GET['ajax'] == 1;
 
-// 2. XÂY DỰNG TRUY VẤN
-$whereArr = [];
-$params = [];
+// Nhận trạng thái Order và Danh sách Tag
+$isOrder  = isset($_GET['order']) && $_GET['order'] == 1 ? 1 : 0;
+$tagIds   = isset($_GET['tag_ids']) ? $_GET['tag_ids'] : '';
 
+// 2. XÂY DỰNG CÂU TRUY VẤN (DÙNG TOÀN BỘ DẤU ?)
+$whereArr = [];
+$params = []; // Mảng chứa giá trị (Index tự động 0,1,2...)
+
+// A. Phân loại Bán / Thuê
 if ($viewMode == 'rent') {
     $whereArr[] = "p.price_rent > 0";
     $priceCol = 'p.price_rent';
@@ -22,96 +27,123 @@ if ($viewMode == 'rent') {
 } else {
     $whereArr[] = "p.price > 0";
     $priceCol = 'p.price';
-    $pageTitleText = "Danh sách Acc Bán";
+    $pageTitleText = ($isOrder == 1) ? "Danh sách Acc Order / Ký Gửi" : "Danh sách Acc Bán (Có sẵn)";
 }
 
+// B. Lọc theo trạng thái Order
+if ($viewMode == 'shop') {
+    $whereArr[] = "p.is_order = ?";
+    $params[] = $isOrder;
+}
+
+// C. Tìm kiếm từ khóa
 if ($keyword) {
-    $whereArr[] = "(p.title LIKE :kw OR p.id = :id)";
-    $params[':kw'] = "%$keyword%";
-    $params[':id'] = (int)$keyword;
+    $whereArr[] = "(p.title LIKE ? OR p.id = ? OR t.name LIKE ?)";
+    $params[] = "%$keyword%";
+    $params[] = (int)$keyword;
+    $params[] = "%$keyword%";
 }
 
-if (isset($_GET['min'])) {
-    $whereArr[] = "$priceCol >= :min";
-    $params[':min'] = (int)$_GET['min'];
+// D. Lọc theo Tag ID
+if (!empty($tagIds)) {
+    $tIds = explode(',', $tagIds);
+    // Tạo chuỗi dấu hỏi (?,?,?)
+    $inQuery = implode(',', array_fill(0, count($tIds), '?'));
+    $whereArr[] = "pt.tag_id IN ($inQuery)";
+
+    foreach ($tIds as $tid) {
+        $params[] = (int)$tid;
+    }
 }
-if (isset($_GET['max'])) {
-    $whereArr[] = "$priceCol <= :max";
-    $params[':max'] = (int)$_GET['max'];
+
+// E. Lọc Giá
+if (isset($_GET['min']) && is_numeric($_GET['min'])) {
+    $whereArr[] = "$priceCol >= ?";
+    $params[] = (int)$_GET['min'];
+}
+if (isset($_GET['max']) && is_numeric($_GET['max'])) {
+    $whereArr[] = "$priceCol <= ?";
+    $params[] = (int)$_GET['max'];
 }
 
 $whereArr[] = "p.status = 1";
 $whereSql = !empty($whereArr) ? "WHERE " . implode(" AND ", $whereArr) : "";
 
 try {
-    // Đếm tổng số (Chỉ đếm khi tải trang lần đầu)
+    // JOIN BẢNG ĐỂ LỌC
+    $joinSql = "LEFT JOIN product_tags pt ON p.id = pt.product_id 
+                LEFT JOIN tags t ON pt.tag_id = t.id";
+
+    // 1. Đếm tổng
     if (!$isAjax) {
-        $stmtCount = $conn->prepare("SELECT COUNT(*) FROM products p $whereSql");
+        $stmtCount = $conn->prepare("SELECT COUNT(DISTINCT p.id) FROM products p $joinSql $whereSql");
         $stmtCount->execute($params);
         $totalRecords = $stmtCount->fetchColumn();
         $totalPages = ceil($totalRecords / $limit);
         if ($page > $totalPages && $totalPages > 0) $page = $totalPages;
     }
 
-    // Lấy danh sách sản phẩm
-    $sql = "SELECT p.*, a.role 
+    // 2. Lấy dữ liệu
+    $sql = "SELECT DISTINCT p.* 
             FROM products p 
-            LEFT JOIN admins a ON p.user_id = a.id 
+            $joinSql
             $whereSql 
-            ORDER BY 
-                p.is_featured DESC, 
-                p.view_order ASC, 
-                a.role DESC, 
-                p.id DESC 
+            ORDER BY p.is_featured DESC, p.created_at DESC 
             LIMIT $limit OFFSET $offset";
 
     $stmt = $conn->prepare($sql);
-    foreach ($params as $key => $val) $stmt->bindValue($key, $val);
-    $stmt->execute();
+    $stmt->execute($params);
     $products = $stmt->fetchAll();
 } catch (PDOException $e) {
     if ($isAjax) die();
-    die("Lỗi kết nối: " . $e->getMessage());
+    die("Lỗi: " . $e->getMessage());
 }
 
-// RENDER CARD FUNCTION
+// HÀM HIỂN THỊ THẺ SẢN PHẨM
 function renderProductCard($p, $viewMode)
 {
     $displayPrice = ($viewMode == 'rent') ? $p['price_rent'] : $p['price'];
     $unitLabel = ($viewMode == 'rent') ? (($p['unit'] == 2) ? '/ ngày' : '/ giờ') : '';
     $thumbUrl = 'uploads/' . $p['thumb'];
     if (empty($p['thumb']) || !file_exists($thumbUrl)) $thumbUrl = 'assets/images/no-image.jpg';
-    $isVip = ($p['is_featured'] == 1);
 
-    // [UPDATE] Bỏ viền vàng cho sản phẩm nổi bật
-    $vipClass = '';
+    $badgeOrder = ($p['is_order'] == 1)
+        ? '<span class="badge bg-white text-danger position-absolute top-0 end-0 m-2 shadow-sm" style="z-index:3; font-size:11px; border:1px solid #dc3545">✈️ ORDER</span>'
+        : '';
+
+    $badgeRent = ($viewMode == 'rent')
+        ? '<span class="badge bg-primary position-absolute top-0 end-0 m-2 shadow-sm" style="z-index:3; font-size:11px;">THUÊ</span>'
+        : '';
+
+    $isVip = ($p['is_featured'] == 1);
 ?>
-<!-- [UPDATE] Đổi cột thành col-lg-4 (3 cột) -->
 <div class="col-12 col-md-6 col-lg-4 feed-item-scroll">
-    <div class="product-card <?= $vipClass ?>">
+    <div class="product-card">
         <a href="detail.php?id=<?= $p['id'] ?>" class="text-decoration-none">
             <div class="product-thumb-box">
                 <?php if ($isVip): ?>
                 <span
                     class="badge bg-danger position-absolute top-0 start-0 m-2 shadow-sm d-flex align-items-center gap-1"
-                    style="z-index:3; font-size:11px;"><i class="ph-fill ph-fire"></i> NỔI BẬT</span>
+                    style="z-index:3; font-size:11px;">
+                    <i class="ph-fill ph-fire"></i> NỔI BẬT
+                </span>
                 <?php endif; ?>
-                <?php if ($viewMode == 'rent'): ?>
-                <span class="badge bg-primary position-absolute top-0 end-0 m-2" style="z-index:2">THUÊ</span>
-                <?php endif; ?>
+                <?= $badgeOrder ?>
+                <?= $badgeRent ?>
                 <img src="<?= $thumbUrl ?>" class="product-thumb" loading="lazy" alt="<?= $p['title'] ?>">
             </div>
         </a>
         <div class="product-body">
             <div class="d-flex align-items-center mb-2 gap-2">
-                <a href="detail.php?id=<?= $p['id'] ?>" class="text-decoration-none product-title m-0">Mã acc:
-                    <?= $p['title'] ?></a>
+                <a href="detail.php?id=<?= $p['id'] ?>" class="text-decoration-none product-title m-0">
+                    Mã: <?= $p['title'] ?>
+                </a>
                 <button class="btn-copy-code" onclick="copyCode('<?= $p['title'] ?>')"><i class="ph-bold ph-copy"></i>
                     Copy</button>
             </div>
             <div class="d-flex justify-content-between align-items-center small text-secondary">
-                <span><i class="ph-fill ph-clock"></i> <?= date('d/m/Y', strtotime($p['created_at'])) ?></span>
-                <span><i class="ph-fill ph-eye"></i> <?= number_format($p['views']) ?> xem</span>
+                <span><i class="ph-fill ph-clock"></i> <?= date('d/m/y', strtotime($p['created_at'])) ?></span>
+                <span><i class="ph-fill ph-eye"></i> <?= number_format($p['views']) ?></span>
             </div>
             <div class="product-meta">
                 <div class="price-tag">
@@ -127,7 +159,7 @@ function renderProductCard($p, $viewMode)
 <?php
 }
 
-// === XỬ LÝ AJAX ===
+// === AJAX RESPONSE ===
 if ($isAjax) {
     if (count($products) > 0) {
         foreach ($products as $p) renderProductCard($p, $viewMode);
@@ -142,14 +174,14 @@ $pageTitle = $pageTitleText . " | TRỌNG 2K8 SHOP";
 require_once 'includes/header.php';
 ?>
 
-<!-- CONFIG CHO JS -->
+<!-- CONFIG JS -->
 <script>
 window.totalPages = <?= $totalPages ?>;
 window.currentPage = <?= $page ?>;
 window.pageLimit = <?= $limit ?>;
 </script>
 
-<div class="container py-5">
+<div class="container py-4">
 
     <!-- BANNER & SEARCH -->
     <a href="https://zalo.me/0984074897" target="_blank" class="text-decoration-none">
@@ -162,7 +194,7 @@ window.pageLimit = <?= $limit ?>;
     <div class="search-box-modern">
         <form action="" method="GET" class="position-relative">
             <?php if ($viewMode == 'rent'): ?><input type="hidden" name="view" value="rent"><?php endif; ?>
-            <input type="text" name="q" class="search-input-modern" placeholder="Tìm kiếm tên acc, mã số..."
+            <input type="text" name="q" class="search-input-modern" placeholder="Tìm kiếm tên acc, mã số, skin..."
                 value="<?= htmlspecialchars($keyword) ?>">
             <?php if (!empty($keyword)): ?>
             <a href="?view=<?= $viewMode ?>" class="search-btn-modern text-white text-decoration-none"><i
@@ -181,6 +213,7 @@ window.pageLimit = <?= $limit ?>;
             </h4>
             <span class="badge rounded-pill bg-warning text-dark"><?= $totalRecords ?></span>
         </div>
+
         <div class="toggle-group">
             <a href="?view=shop" class="toggle-btn <?= $viewMode == 'shop' ? 'active' : '' ?>"><i
                     class="ph-bold ph-shopping-cart"></i> MUA ACC</a>
@@ -189,13 +222,13 @@ window.pageLimit = <?= $limit ?>;
         </div>
     </div>
 
-    <!-- FILTER -->
+    <!-- FILTER SECTION -->
     <div class="filter-section">
         <a href="?view=<?= $viewMode ?>"
-            class="filter-pill <?= (!isset($_GET['min']) && empty($keyword)) ? 'active' : '' ?>">Tất cả</a>
+            class="filter-pill <?= (!isset($_GET['min']) && empty($keyword) && $isOrder == 0 && empty($tagIds)) ? 'active' : '' ?>">Tất
+            cả</a>
 
         <?php if ($viewMode == 'shop'): ?>
-        <!-- FILTER BÁN (GIỮ NGUYÊN) -->
         <a href="?view=shop&min=0&max=5000000" class="filter-pill <?= checkActive(0, 5000000) ?>">Dưới 5m</a>
         <a href="?view=shop&min=5000000&max=10000000" class="filter-pill <?= checkActive(5000000, 10000000) ?>">5m -
             10m</a>
@@ -207,8 +240,10 @@ window.pageLimit = <?= $limit ?>;
             60m</a>
         <a href="?view=shop&min=60000000" class="filter-pill <?= checkActive(60000000, null) ?>">Trên 60m</a>
 
+        <a href="?view=shop&order=1" class="filter-pill btn-order <?= ($isOrder == 1) ? 'active' : '' ?>">
+            <i class="ph-fill ph-airplane-tilt"></i> Acc Order
+        </a>
         <?php else: ?>
-        <!-- [UPDATE] FILTER THUÊ MỚI -->
         <a href="?view=rent&min=0&max=100000" class="filter-pill <?= checkActive(0, 100000) ?>">Dưới 100k</a>
         <a href="?view=rent&min=100000&max=200000" class="filter-pill <?= checkActive(100000, 200000) ?>">100k -
             200k</a>
@@ -221,17 +256,21 @@ window.pageLimit = <?= $limit ?>;
     </div>
 
     <!-- GRID SẢN PHẨM -->
-    <!-- [UPDATE] Thêm margin âm để căn lề Masonry cho đẹp -->
     <div class="row position-relative" id="productGrid" style="margin: 0 -12px;">
         <?php if (count($products) > 0): ?>
         <?php foreach ($products as $p): renderProductCard($p, $viewMode);
             endforeach; ?>
         <?php else: ?>
-        <!-- KHUNG THÔNG BÁO RỖNG (ĐÃ FIX LAYOUT) -->
         <div class="col-12 empty-state-box">
             <div class="text-center">
                 <i class="ph-duotone ph-magnifying-glass text-secondary opacity-25" style="font-size: 80px;"></i>
-                <p class="text-secondary fw-bold mt-3 mb-4">Không tìm thấy Acc nào phù hợp!</p>
+                <p class="text-secondary fw-bold mt-3 mb-4">
+                    <?php if ($isOrder == 1): ?>
+                    Chưa có Acc Order nào!
+                    <?php else: ?>
+                    Không tìm thấy Acc phù hợp!
+                    <?php endif; ?>
+                </p>
                 <a href="?view=<?= $viewMode ?>" class="btn btn-warning text-white rounded-pill px-4 fw-bold shadow-sm">
                     <i class="ph-bold ph-arrow-counter-clockwise me-1"></i> Xem tất cả
                 </a>
@@ -240,14 +279,13 @@ window.pageLimit = <?= $limit ?>;
         <?php endif; ?>
     </div>
 
-    <!-- PHÂN TRANG: KIỂU MINI GRID -->
+    <!-- PHÂN TRANG -->
     <?php if ($totalPages > 1): ?>
     <div class="pagination-container-modern">
         <div class="pagi-nav-btn js-prev-btn <?= ($page <= 1) ? 'disabled' : '' ?>"
             onclick="<?= ($page > 1) ? "goToPage($page - 1)" : "" ?>">
             <i class="ph-bold ph-caret-left"></i>
         </div>
-
         <div class="position-relative">
             <div class="pagi-main-btn" id="pagiTrigger" onclick="togglePaginationGrid()">
                 <span>Trang <span id="lblCurrentPage"><?= $page ?></span> / <?= $totalPages ?></span>
@@ -255,17 +293,13 @@ window.pageLimit = <?= $limit ?>;
             </div>
             <div class="pagi-dropdown" id="pagiDropdown">
                 <div class="pagi-grid-wrapper">
-                    <?php for ($i = 1; $i <= $totalPages; $i++):
-                            $isActive = ($i == $page) ? 'active' : '';
-                        ?>
-                    <div class="pagi-num <?= $isActive ?>" onclick="goToPage(<?= $i ?>)" data-page="<?= $i ?>">
-                        <?= $i ?>
+                    <?php for ($i = 1; $i <= $totalPages; $i++): $isActive = ($i == $page) ? 'active' : ''; ?>
+                    <div class="pagi-num <?= $isActive ?>" onclick="goToPage(<?= $i ?>)" data-page="<?= $i ?>"><?= $i ?>
                     </div>
                     <?php endfor; ?>
                 </div>
             </div>
         </div>
-
         <div class="pagi-nav-btn js-next-btn <?= ($page >= $totalPages) ? 'disabled' : '' ?>"
             onclick="<?= ($page < $totalPages) ? "goToPage($page + 1)" : "" ?>">
             <i class="ph-bold ph-caret-right"></i>
