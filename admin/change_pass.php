@@ -114,9 +114,6 @@ require_once '../includes/config.php';
         <a href="add.php" class="nav-item">
             <div class="nav-item-add"><i class="ph-bold ph-plus"></i></div>
         </a>
-        <a href="library.php" class="nav-item">
-            <i class="ph-duotone ph-image"></i> <span>Ảnh</span>
-        </a>
         <div class="dropup">
             <div class="nav-item active" data-bs-toggle="dropdown">
                 <!-- Active ở Menu -->

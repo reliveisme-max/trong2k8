@@ -1,5 +1,10 @@
 <?php
-// admin/login.php - UPDATE V2: LƯU QUYỀN VÀ PREFIX
+// admin/login.php - FIX: TĂNG THỜI GIAN ĐĂNG NHẬP LÊN 1 THÁNG (30 NGÀY)
+
+// 1. Cấu hình Session 30 ngày (Phải đặt trước session_start)
+ini_set('session.gc_maxlifetime', 2592000);
+session_set_cookie_params(2592000);
+
 session_start();
 require_once '../includes/config.php';
 
@@ -27,9 +32,9 @@ if (isset($_POST['btn_login'])) {
             $_SESSION['admin_id'] = $user['id'];
             $_SESSION['admin_user'] = $user['username'];
 
-            // [MỚI] Lưu quyền hạn và Prefix
+            // Lưu quyền hạn và Prefix
             $_SESSION['role'] = $user['role'];     // 1: Boss, 0: QTV
-            $_SESSION['prefix'] = $user['prefix']; // Mã riêng (Ví dụ: NAM)
+            $_SESSION['prefix'] = $user['prefix']; // Mã riêng
 
             header("Location: index.php");
             exit;
@@ -57,7 +62,8 @@ if (isset($_POST['btn_login'])) {
 
     <style>
     body {
-        background-color: #f3f4f6;
+        background-color: #f0f2f5;
+        /* Xanh Facebook nhạt */
         font-family: 'Manrope', sans-serif;
         height: 100vh;
         display: flex;
@@ -68,66 +74,63 @@ if (isset($_POST['btn_login'])) {
     .login-card {
         background: #ffffff;
         padding: 40px;
-        border-radius: 20px;
+        border-radius: 12px;
         width: 100%;
-        max-width: 420px;
-        box-shadow: 0 10px 40px rgba(0, 0, 0, 0.08);
-        border: 1px solid #e5e7eb;
+        max-width: 400px;
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+        /* Bóng kiểu FB */
+        border: none;
     }
 
     .brand-text {
         font-weight: 800;
-        color: #111827;
-        font-size: 24px;
+        color: #1877F2;
+        /* Xanh FB */
+        font-size: 28px;
         text-align: center;
-        margin-bottom: 30px;
-        text-transform: uppercase;
-        letter-spacing: 1px;
+        margin-bottom: 20px;
+        letter-spacing: 0.5px;
     }
 
     .form-label {
-        font-size: 13px;
-        font-weight: 700;
-        color: #4b5563;
-        margin-bottom: 8px;
-        text-transform: uppercase;
+        font-size: 14px;
+        font-weight: 600;
+        color: #050505;
+        margin-bottom: 6px;
     }
 
     .form-control {
-        background: #f9fafb;
-        border: 1px solid #d1d5db;
-        color: #111827;
+        background: #fff;
+        border: 1px solid #dddfe2;
+        color: #1c1e21;
         padding: 14px 16px;
-        border-radius: 12px;
-        font-size: 15px;
+        border-radius: 6px;
+        font-size: 16px;
         transition: all 0.2s;
     }
 
     .form-control:focus {
         background: #fff;
-        border-color: #f59e0b;
-        box-shadow: 0 0 0 4px rgba(245, 158, 11, 0.1);
+        border-color: #1877F2;
+        box-shadow: 0 0 0 2px rgba(24, 119, 242, 0.2);
     }
 
     /* Nút đăng nhập */
     .btn-login {
-        background: linear-gradient(135deg, #f59e0b, #d97706);
+        background: #1877F2;
         color: #fff;
         font-weight: 700;
+        font-size: 18px;
         width: 100%;
-        padding: 14px;
+        padding: 12px;
         border: none;
-        border-radius: 12px;
-        text-transform: uppercase;
-        letter-spacing: 0.5px;
-        margin-top: 10px;
-        transition: 0.3s;
-        box-shadow: 0 4px 10px rgba(245, 158, 11, 0.3);
+        border-radius: 6px;
+        margin-top: 15px;
+        transition: 0.2s;
     }
 
     .btn-login:hover {
-        transform: translateY(-2px);
-        box-shadow: 0 6px 15px rgba(245, 158, 11, 0.4);
+        background: #166fe5;
         color: #fff;
     }
 
@@ -141,31 +144,32 @@ if (isset($_POST['btn_login'])) {
         right: 15px;
         top: 50%;
         transform: translateY(-50%);
-        color: #9ca3af;
+        color: #606770;
         cursor: pointer;
         font-size: 20px;
-        transition: 0.2s;
     }
 
     .toggle-password:hover {
-        color: #f59e0b;
+        color: #1877F2;
     }
 
     .back-link {
         text-align: center;
-        margin-top: 25px;
+        margin-top: 20px;
+        border-top: 1px solid #dddfe2;
+        padding-top: 20px;
     }
 
     .back-link a {
         text-decoration: none;
-        color: #6b7280;
-        font-size: 13px;
+        color: #606770;
+        font-size: 14px;
         font-weight: 600;
-        transition: 0.2s;
     }
 
     .back-link a:hover {
-        color: #f59e0b;
+        color: #1877F2;
+        text-decoration: underline;
     }
     </style>
 </head>
@@ -174,42 +178,37 @@ if (isset($_POST['btn_login'])) {
 
     <div class="login-card">
         <div class="brand-text">
-            <i class="ph-fill ph-hexagon text-warning"></i> ADMIN PANEL
+            <i class="ph-fill ph-heart"></i> ADMIN PANEL
         </div>
 
         <?php if ($error): ?>
-        <div
-            class="alert alert-danger py-2 text-center text-sm mb-4 rounded-3 border-0 bg-danger bg-opacity-10 text-danger fw-bold">
-            <i class="ph-bold ph-warning-circle me-1"></i> <?= $error ?>
+        <div class="alert alert-danger py-2 text-center text-sm mb-3 rounded-2 fw-bold" style="font-size: 13px;">
+            <?= $error ?>
         </div>
         <?php endif; ?>
 
         <form method="POST">
-            <div class="mb-4">
-                <label class="form-label">Tài khoản</label>
-                <input type="text" name="username" class="form-control" required placeholder="Nhập tên đăng nhập...">
+            <div class="mb-3">
+                <input type="text" name="username" class="form-control" required placeholder="Tài khoản">
             </div>
 
-            <div class="mb-4">
-                <label class="form-label">Mật khẩu</label>
+            <div class="mb-3">
                 <div class="password-wrapper">
                     <input type="password" name="password" id="passInput" class="form-control" required
-                        placeholder="Nhập mật khẩu..." style="padding-right: 45px;">
-
+                        placeholder="Mật khẩu" style="padding-right: 45px;">
                     <!-- ICON MẮT -->
                     <i class="ph-bold ph-eye-slash toggle-password" id="toggleIcon" onclick="togglePass()"></i>
                 </div>
             </div>
 
-            <button type="submit" name="btn_login" class="btn btn-login">ĐĂNG NHẬP NGAY</button>
+            <button type="submit" name="btn_login" class="btn btn-login">Đăng nhập</button>
         </form>
 
         <div class="back-link">
-            <a href="../index.php"><i class="ph-bold ph-arrow-left"></i> Quay lại trang chủ Shop</a>
+            <a href="../index.php">Quay lại Shop</a>
         </div>
     </div>
 
-    <!-- SCRIPT XỬ LÝ ẨN/HIỆN PASS -->
     <script>
     function togglePass() {
         const input = document.getElementById('passInput');

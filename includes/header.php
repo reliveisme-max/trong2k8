@@ -1,12 +1,11 @@
 <?php
 // includes/header.php
-// File này chứa phần đầu trang dùng chung
+// UPDATE V3: ADDED MASONRY LIBRARIES
 
-// 1. Cấu hình tiêu đề mặc định nếu chưa có
+// 1. Cấu hình tiêu đề mặc định
 if (!isset($pageTitle)) $pageTitle = 'TRỌNG 2K8 SHOP - Uy Tín Hàng Đầu';
 
-// 2. Kiểm tra xem đang ở trang nào để hiển thị nút bấm phù hợp
-// Nếu biến $isDetailPage được set là true thì hiện nút Back, ngược lại hiện nút Zalo
+// 2. Kiểm tra trang chi tiết
 $showBackButton = isset($isDetailPage) && $isDetailPage === true;
 $backLink = isset($backUrl) ? $backUrl : './';
 ?>
@@ -25,22 +24,25 @@ $backLink = isset($backUrl) ? $backUrl : './';
         rel="stylesheet">
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 
+    <!-- 2. THƯ VIỆN MASONRY (XẾP GẠCH) & IMAGESLOADED (CHỜ ẢNH) -->
+    <script src="https://unpkg.com/imagesloaded@5/imagesloaded.pkgd.min.js"></script>
+    <script src="https://unpkg.com/masonry-layout@4/dist/masonry.pkgd.min.js"></script>
+
     <!-- Thư viện ảnh (Chỉ dùng cho trang chi tiết) -->
     <?php if ($showBackButton): ?>
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fancyapps/ui@5.0/dist/fancybox/fancybox.css" />
     <?php endif; ?>
 
-    <!-- 2. CSS CHÍNH (INLINE ĐỂ TRÁNH LỖI MẠNG/CACHE) -->
+    <!-- 3. CSS CHÍNH (INLINE) -->
     <style>
-    <?php // Đường dẫn tuyệt đối đến file CSS để include chính xác
-    $cssPath=dirname(__DIR__) . '/assets/css/style.css';
+    <?php $cssPath=dirname(__DIR__) . '/assets/css/style.css';
 
     if (file_exists($cssPath)) {
         include $cssPath;
     }
 
     else {
-        echo "/* Lỗi: Không tìm thấy file style.css tại $cssPath */";
+        echo "/* Lỗi: Không tìm thấy file style.css */";
     }
 
     ?>

@@ -1,9 +1,14 @@
 <?php
-// admin/auth.php - TRẠM KIỂM SOÁT AN NINH
-// File này sẽ được nhúng vào đầu các trang quan trọng (index, add, edit...)
+// admin/auth.php - FIX: TĂNG THỜI GIAN ĐĂNG NHẬP LÊN 1 THÁNG (30 NGÀY)
 
-// 1. Khởi động session (Nếu chưa có)
+// 1. Cấu hình thời gian tồn tại (30 ngày = 2592000 giây)
 if (session_status() === PHP_SESSION_NONE) {
+    // Thời gian sống của file session trên server
+    ini_set('session.gc_maxlifetime', 2592000);
+
+    // Thời gian sống của cookie trên trình duyệt
+    session_set_cookie_params(2592000);
+
     session_start();
 }
 

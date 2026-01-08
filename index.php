@@ -1,5 +1,5 @@
 <?php
-// index.php - FINAL VERSION: INSTANT SMOOTH PAGINATION
+// index.php - UPDATE: 3 COLUMNS + NEW RENT FILTERS
 require_once 'includes/config.php';
 require_once 'includes/functions.php';
 
@@ -7,7 +7,7 @@ require_once 'includes/functions.php';
 $viewMode = isset($_GET['view']) && $_GET['view'] == 'rent' ? 'rent' : 'shop';
 $keyword  = isset($_GET['q']) ? trim($_GET['q']) : '';
 $page     = isset($_GET['page']) ? (int)$_GET['page'] : 1;
-$limit    = 12;
+$limit    = 12; // Số lượng sản phẩm mỗi trang
 $offset   = ($page - 1) * $limit;
 $isAjax   = isset($_GET['ajax']) && $_GET['ajax'] == 1;
 
@@ -44,8 +44,7 @@ $whereArr[] = "p.status = 1";
 $whereSql = !empty($whereArr) ? "WHERE " . implode(" AND ", $whereArr) : "";
 
 try {
-    // Đếm tổng số (Dùng để chia trang)
-    // Lưu ý: Chỉ đếm khi tải trang lần đầu (không phải Ajax) để tối ưu
+    // Đếm tổng số (Chỉ đếm khi tải trang lần đầu)
     if (!$isAjax) {
         $stmtCount = $conn->prepare("SELECT COUNT(*) FROM products p $whereSql");
         $stmtCount->execute($params);
@@ -75,7 +74,7 @@ try {
     die("Lỗi kết nối: " . $e->getMessage());
 }
 
-// RENDER CARD
+// RENDER CARD FUNCTION
 function renderProductCard($p, $viewMode)
 {
     $displayPrice = ($viewMode == 'rent') ? $p['price_rent'] : $p['price'];
@@ -83,9 +82,12 @@ function renderProductCard($p, $viewMode)
     $thumbUrl = 'uploads/' . $p['thumb'];
     if (empty($p['thumb']) || !file_exists($thumbUrl)) $thumbUrl = 'assets/images/no-image.jpg';
     $isVip = ($p['is_featured'] == 1);
-    $vipClass = $isVip ? 'border-warning border-2' : '';
+
+    // [UPDATE] Bỏ viền vàng cho sản phẩm nổi bật
+    $vipClass = '';
 ?>
-<div class="col-12 col-md-4 col-lg-3 feed-item-scroll">
+<!-- [UPDATE] Đổi cột thành col-lg-4 (3 cột) -->
+<div class="col-12 col-md-6 col-lg-4 feed-item-scroll">
     <div class="product-card <?= $vipClass ?>">
         <a href="detail.php?id=<?= $p['id'] ?>" class="text-decoration-none">
             <div class="product-thumb-box">
@@ -113,7 +115,7 @@ function renderProductCard($p, $viewMode)
             </div>
             <div class="product-meta">
                 <div class="price-tag">
-                    <span class="text-secondary fw-normal" style="font-size: 14px;">Giá:
+                    <span class="fw-normal text-secondary" style="font-size: 14px;">Giá:
                     </span><?= formatPrice($displayPrice) ?>
                     <small style="font-size:12px; font-weight:normal; color:#666"><?= $unitLabel ?></small>
                 </div>
@@ -126,7 +128,6 @@ function renderProductCard($p, $viewMode)
 }
 
 // === XỬ LÝ AJAX ===
-// Chỉ trả về HTML của danh sách sản phẩm, KHÔNG trả về Pagination
 if ($isAjax) {
     if (count($products) > 0) {
         foreach ($products as $p) renderProductCard($p, $viewMode);
@@ -141,10 +142,11 @@ $pageTitle = $pageTitleText . " | TRỌNG 2K8 SHOP";
 require_once 'includes/header.php';
 ?>
 
-<!-- Truyền biến PHP sang JS để xử lý Logic Phân trang -->
+<!-- CONFIG CHO JS -->
 <script>
 window.totalPages = <?= $totalPages ?>;
 window.currentPage = <?= $page ?>;
+window.pageLimit = <?= $limit ?>;
 </script>
 
 <div class="container py-5">
@@ -191,7 +193,9 @@ window.currentPage = <?= $page ?>;
     <div class="filter-section">
         <a href="?view=<?= $viewMode ?>"
             class="filter-pill <?= (!isset($_GET['min']) && empty($keyword)) ? 'active' : '' ?>">Tất cả</a>
+
         <?php if ($viewMode == 'shop'): ?>
+        <!-- FILTER BÁN (GIỮ NGUYÊN) -->
         <a href="?view=shop&min=0&max=5000000" class="filter-pill <?= checkActive(0, 5000000) ?>">Dưới 5m</a>
         <a href="?view=shop&min=5000000&max=10000000" class="filter-pill <?= checkActive(5000000, 10000000) ?>">5m -
             10m</a>
@@ -202,54 +206,70 @@ window.currentPage = <?= $page ?>;
         <a href="?view=shop&min=40000000&max=60000000" class="filter-pill <?= checkActive(40000000, 60000000) ?>">40m -
             60m</a>
         <a href="?view=shop&min=60000000" class="filter-pill <?= checkActive(60000000, null) ?>">Trên 60m</a>
+
         <?php else: ?>
-        <a href="?view=rent&min=0&max=20000" class="filter-pill <?= checkActive(0, 20000) ?>">Dưới 20k</a>
-        <a href="?view=rent&min=20000&max=50000" class="filter-pill <?= checkActive(20000, 50000) ?>">20k - 50k</a>
-        <a href="?view=rent&min=50000&max=100000" class="filter-pill <?= checkActive(50000, 100000) ?>">50k - 100k</a>
-        <a href="?view=rent&min=100000" class="filter-pill <?= checkActive(100000, null) ?>">Trên 100k</a>
+        <!-- [UPDATE] FILTER THUÊ MỚI -->
+        <a href="?view=rent&min=0&max=100000" class="filter-pill <?= checkActive(0, 100000) ?>">Dưới 100k</a>
+        <a href="?view=rent&min=100000&max=200000" class="filter-pill <?= checkActive(100000, 200000) ?>">100k -
+            200k</a>
+        <a href="?view=rent&min=200000&max=300000" class="filter-pill <?= checkActive(200000, 300000) ?>">200k -
+            300k</a>
+        <a href="?view=rent&min=300000&max=500000" class="filter-pill <?= checkActive(300000, 500000) ?>">300k -
+            500k</a>
+        <a href="?view=rent&min=500000" class="filter-pill <?= checkActive(500000, null) ?>">Trên 500k</a>
         <?php endif; ?>
     </div>
 
     <!-- GRID SẢN PHẨM -->
-    <div class="row g-4 position-relative" id="productGrid">
+    <!-- [UPDATE] Thêm margin âm để căn lề Masonry cho đẹp -->
+    <div class="row position-relative" id="productGrid" style="margin: 0 -12px;">
         <?php if (count($products) > 0): ?>
         <?php foreach ($products as $p): renderProductCard($p, $viewMode);
             endforeach; ?>
         <?php else: ?>
-        <div class="col-12 text-center py-5">
-            <i class="ph-duotone ph-magnifying-glass text-secondary opacity-25" style="font-size: 80px;"></i>
-            <p class="text-secondary fw-bold mt-3">Không tìm thấy Acc nào!</p>
-            <a href="?view=<?= $viewMode ?>" class="btn btn-warning text-white rounded-pill px-4">Xem tất cả</a>
+        <!-- KHUNG THÔNG BÁO RỖNG (ĐÃ FIX LAYOUT) -->
+        <div class="col-12 empty-state-box">
+            <div class="text-center">
+                <i class="ph-duotone ph-magnifying-glass text-secondary opacity-25" style="font-size: 80px;"></i>
+                <p class="text-secondary fw-bold mt-3 mb-4">Không tìm thấy Acc nào phù hợp!</p>
+                <a href="?view=<?= $viewMode ?>" class="btn btn-warning text-white rounded-pill px-4 fw-bold shadow-sm">
+                    <i class="ph-bold ph-arrow-counter-clockwise me-1"></i> Xem tất cả
+                </a>
+            </div>
         </div>
         <?php endif; ?>
     </div>
 
-    <!-- PHÂN TRANG (STATIC HTML - XỬ LÝ BẰNG JS) -->
+    <!-- PHÂN TRANG: KIỂU MINI GRID -->
     <?php if ($totalPages > 1): ?>
-    <div class="pagination-wrapper">
-        <!-- Nút Trái -->
-        <a href="javascript:void(0)" class="page-nav-btn js-prev-btn <?= ($page <= 1) ? 'disabled' : '' ?>"
+    <div class="pagination-container-modern">
+        <div class="pagi-nav-btn js-prev-btn <?= ($page <= 1) ? 'disabled' : '' ?>"
             onclick="<?= ($page > 1) ? "goToPage($page - 1)" : "" ?>">
             <i class="ph-bold ph-caret-left"></i>
-        </a>
+        </div>
 
-        <!-- Viên thuốc chứa số -->
-        <div class="page-numbers-capsule">
-            <div class="page-numbers-container" id="pagiContainer">
-                <?php for ($i = 1; $i <= $totalPages; $i++):
-                        $isActive = ($i == $page) ? 'active' : '';
-                    ?>
-                <a href="javascript:void(0)" onclick="goToPage(<?= $i ?>)" class="page-number-item <?= $isActive ?>"
-                    data-page="<?= $i ?>"><?= $i ?></a>
-                <?php endfor; ?>
+        <div class="position-relative">
+            <div class="pagi-main-btn" id="pagiTrigger" onclick="togglePaginationGrid()">
+                <span>Trang <span id="lblCurrentPage"><?= $page ?></span> / <?= $totalPages ?></span>
+                <i class="ph-bold ph-caret-up"></i>
+            </div>
+            <div class="pagi-dropdown" id="pagiDropdown">
+                <div class="pagi-grid-wrapper">
+                    <?php for ($i = 1; $i <= $totalPages; $i++):
+                            $isActive = ($i == $page) ? 'active' : '';
+                        ?>
+                    <div class="pagi-num <?= $isActive ?>" onclick="goToPage(<?= $i ?>)" data-page="<?= $i ?>">
+                        <?= $i ?>
+                    </div>
+                    <?php endfor; ?>
+                </div>
             </div>
         </div>
 
-        <!-- Nút Phải -->
-        <a href="javascript:void(0)" class="page-nav-btn js-next-btn <?= ($page >= $totalPages) ? 'disabled' : '' ?>"
+        <div class="pagi-nav-btn js-next-btn <?= ($page >= $totalPages) ? 'disabled' : '' ?>"
             onclick="<?= ($page < $totalPages) ? "goToPage($page + 1)" : "" ?>">
             <i class="ph-bold ph-caret-right"></i>
-        </a>
+        </div>
     </div>
     <?php endif; ?>
 
@@ -270,7 +290,6 @@ function copyCode(text) {
         });
     });
 }
-// (Các logic chuyển trang đã được chuyển sang assets/js/main.js để load nhanh hơn)
 </script>
 
 <?php require_once 'includes/footer.php'; ?>

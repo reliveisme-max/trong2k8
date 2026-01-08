@@ -1,5 +1,5 @@
 <?php
-// detail.php - CLEAN VERSION: TÁCH HEADER & FOOTER
+// detail.php - FINAL VERSION: DUAL PRICE DISPLAY + SIMPLE ZALO LINK
 require_once 'includes/config.php';
 require_once 'includes/functions.php';
 
@@ -11,7 +11,7 @@ if ($id == 0) {
 }
 
 // 2. LẤY DỮ LIỆU TỪ DB
-$stmt = $conn->prepare("SELECT id, title, price, price_rent, type, unit, thumb, gallery, status, views, created_at FROM products WHERE id = :id");
+$stmt = $conn->prepare("SELECT * FROM products WHERE id = :id");
 $stmt->execute([':id' => $id]);
 $product = $stmt->fetch();
 
@@ -21,23 +21,18 @@ if (!$product) die("Acc không tồn tại!");
 $conn->prepare("UPDATE products SET views = views + 1 WHERE id = :id")->execute([':id' => $id]);
 $product['views']++;
 
-// 4. XỬ LÝ LOGIC HIỂN THỊ (Bán hay Thuê)
-$isRentMode = isset($_GET['view']) && $_GET['view'] == 'rent';
+// 4. XỬ LÝ LOGIC HIỂN THỊ GIÁ
+$isSell = ($product['price'] > 0);
+$isRent = ($product['price_rent'] > 0);
+$isDual = ($isSell && $isRent); // Acc vừa bán vừa thuê
 
-// Nếu acc chỉ cho thuê (giá bán = 0) thì tự động chuyển sang chế độ thuê
-if (!$isRentMode && $product['price'] == 0 && $product['price_rent'] > 0) {
-    $isRentMode = true;
-}
-
-$showPrice = $isRentMode ? $product['price_rent'] : $product['price'];
-$unitLabel = $isRentMode ? (($product['unit'] == 2) ? "/ ngày" : "/ giờ") : "";
-$backLink  = $isRentMode ? 'index.php?view=rent' : 'index.php';
-$actionText = $isRentMode ? 'THUÊ NGAY' : 'MÚC NGAY';
+// Xác định link quay lại
+$backLink = 'index.php';
+if (isset($_GET['view']) && $_GET['view'] == 'rent') $backLink = 'index.php?view=rent';
 
 // 5. XỬ LÝ GALLERY ẢNH
 $gallery = json_decode($product['gallery'], true);
 if (!is_array($gallery)) $gallery = [];
-// Loại bỏ ảnh bìa khỏi danh sách gallery để tránh trùng
 if (!empty($product['thumb'])) {
     $gallery = array_values(array_filter($gallery, function ($img) use ($product) {
         return $img !== $product['thumb'];
@@ -46,8 +41,8 @@ if (!empty($product['thumb'])) {
 
 // --- CẤU HÌNH HEADER ---
 $pageTitle = "Mã số: " . $product['title'] . " | TRỌNG 2K8 SHOP";
-$isDetailPage = true; // Báo hiệu cho Header hiện nút "Quay lại"
-$backUrl = $backLink; // Link quay lại
+$isDetailPage = true;
+$backUrl = $backLink;
 
 require_once 'includes/header.php';
 ?>
@@ -56,29 +51,60 @@ require_once 'includes/header.php';
 
     <!-- 1. KHỐI THÔNG TIN SẢN PHẨM -->
     <div class="detail-header">
+
+        <!-- TIÊU ĐỀ & BADGE -->
         <h1 class="detail-title">
-            <?php if ($isRentMode): ?>
+            <?php if ($isDual): ?>
+            <span class="badge bg-danger align-middle" style="font-size: 14px;">BÁN</span>
+            <span class="badge bg-primary align-middle" style="font-size: 14px;">THUÊ</span>
+            <?php elseif ($isRent): ?>
             <span class="badge bg-primary align-middle" style="font-size: 14px;">THUÊ</span>
             <?php else: ?>
-            <span class="badge bg-warning text-dark align-middle" style="font-size: 14px;">BÁN</span>
+            <span class="badge bg-danger align-middle" style="font-size: 14px;">BÁN</span>
             <?php endif; ?>
             Mã số: <?= $product['title'] ?>
         </h1>
 
-        <div class="text-secondary mb-3 small">
+        <div class="text-secondary mb-4 small">
             <i class="ph-fill ph-eye"></i> <?= number_format($product['views']) ?> xem &bull;
             <i class="ph-bold ph-clock"></i> <?= date('d/m/Y', strtotime($product['created_at'])) ?>
         </div>
 
-        <div class="detail-price-lg">
-            <span class="text-secondary fw-normal" style="font-size: 18px; vertical-align: middle;">Giá: </span>
-            <?= formatPrice($showPrice) ?>
-            <small style="font-size: 16px; font-weight: normal; color: #6b7280;"><?= $unitLabel ?></small>
+        <!-- HIỂN THỊ GIÁ (LOGIC MỚI) -->
+        <div class="mb-4">
+            <?php if ($isDual): ?>
+            <!-- TRƯỜNG HỢP 1: VỪA BÁN VỪA THUÊ (Hiện 2 dòng) -->
+            <div class="d-flex flex-column gap-2 align-items-center">
+                <div class="fs-4 fw-bold" style="color: var(--price-color);">
+                    <i class="ph-fill ph-shopping-cart me-2"></i>Giá Bán: <?= formatPrice($product['price']) ?>
+                </div>
+                <div class="fs-5 fw-bold text-primary">
+                    <i class="ph-fill ph-clock-user me-2"></i>Giá Thuê: <?= formatPrice($product['price_rent']) ?> /
+                    <?= ($product['unit'] == 2) ? 'ngày' : 'giờ' ?>
+                </div>
+            </div>
+
+            <?php elseif ($isRent): ?>
+            <!-- TRƯỜNG HỢP 2: CHỈ THUÊ -->
+            <div class="detail-price-lg">
+                <span class="text-secondary fw-normal fs-5">Giá Thuê: </span>
+                <?= formatPrice($product['price_rent']) ?>
+                <small class="text-muted fw-normal fs-6">/ <?= ($product['unit'] == 2) ? 'ngày' : 'giờ' ?></small>
+            </div>
+
+            <?php else: ?>
+            <!-- TRƯỜNG HỢP 3: CHỈ BÁN -->
+            <div class="detail-price-lg">
+                <span class="text-secondary fw-normal fs-5">Giá Bán: </span>
+                <?= formatPrice($product['price']) ?>
+            </div>
+            <?php endif; ?>
         </div>
 
+        <!-- NÚT MUA (GIỮ NGUYÊN STYLE, ĐỔI LOGIC) -->
         <?php if ($product['status'] == 1): ?>
-        <button onclick="buyNow()" class="btn-buy-lg">
-            <i class="ph-bold ph-shopping-cart"></i> <?= $actionText ?> (QUA ZÉP LÀO)
+        <button onclick="openZalo()" class="btn-buy-lg">
+            <i class="ph-bold ph-shopping-cart me-2"></i> MÚC NGAY (QUA ZÉP LÀO)
         </button>
         <div class="mt-3 text-secondary fst-italic small">
             <i class="ph-fill ph-shield-check text-success"></i> Giao dịch tự động hoặc trung gian uy tín 100%
@@ -100,7 +126,7 @@ require_once 'includes/header.php';
         </div>
     </div>
 
-    <!-- 3. HIỆU ỨNG LOADING KHI CUỘN -->
+    <!-- 3. HIỆU ỨNG LOADING SPINNER -->
     <div class="loading-spinner" id="loadingIcon">
         <div class="spinner-icon"></div>
         <div class="mt-2 text-secondary small">Đang tải thêm ảnh...</div>
@@ -118,10 +144,10 @@ Fancybox.bind("[data-fancybox]", {
     }
 });
 
-// Logic Lazy Load ảnh (Tải dần khi cuộn trang để web nhẹ)
+// Logic Lazy Load ảnh (Tải dần khi cuộn trang)
 const galleryImages = <?= json_encode($gallery) ?>;
 let currentIndex = 0;
-const loadBatch = 3; // Mỗi lần cuộn tải thêm 3 ảnh
+const loadBatch = 3;
 const feedContainer = document.getElementById('galleryFeed');
 const loadingEl = document.getElementById('loadingIcon');
 let isLoading = false;
@@ -173,20 +199,17 @@ if (galleryImages.length > 0) {
 }
 window.addEventListener('scroll', handleScroll);
 
-// Logic nút Mua ngay -> Chuyển qua Zalo
-function buyNow() {
-    var code = "<?= $product['title'] ?>";
-    var price = "<?= formatPrice($showPrice) ?>";
-    var unitLabel = "<?= $unitLabel ?>";
-    var url = window.location.href;
-    var actionText = "<?= $actionText ?>";
+// --- [UPDATE] LOGIC MỞ ZALO ĐƠN GIẢN ---
+function openZalo() {
     var zaloPhone = "0984074897"; // Số Zalo của bạn
 
-    var content = `Chào Shop, mình muốn ${actionText} Acc Mã Số: ${code} - Giá: ${price}${unitLabel}.\nLink: ${url}`;
+    // Tự động phát hiện thiết bị
+    // Nếu là điện thoại -> Dùng link App (zalo.me)
+    // Nếu là PC -> Dùng link Web (chat.zalo.me)
+    var isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
 
-    // Tự động phát hiện thiết bị để dùng link phù hợp
-    var zaloLink = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent) ?
-        `https://zalo.me/${zaloPhone}?text=${encodeURIComponent(content)}` :
+    var zaloLink = isMobile ?
+        `https://zalo.me/${zaloPhone}` :
         `https://chat.zalo.me/?phone=${zaloPhone}`;
 
     window.open(zaloLink, '_blank');
