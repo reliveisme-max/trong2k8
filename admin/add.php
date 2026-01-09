@@ -142,6 +142,10 @@ $allTags = $stmtTags->fetchAll();
                         </div>
                         <input type="file" id="fileInput" name="gallery[]" accept="image/*" multiple hidden>
                         <div id="imageGrid" class="sortable-grid"></div>
+                        <div id="toggleGridBtn" class="btn-toggle-view d-none" onclick="toggleGrid()">
+                            <span id="toggleText">Xem thêm ảnh</span>
+                            <i class="ph-bold ph-caret-down ms-1"></i>
+                        </div>
                     </div>
 
                     <!-- 3. TAGS (ĐÃ LÀM GỌN) -->

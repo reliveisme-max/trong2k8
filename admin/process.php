@@ -101,15 +101,26 @@ try {
         $productId = $conn->lastInsertId();
         $msg = "added";
     } else {
-        // UPDATE
+        // === TRƯỜNG HỢP UPDATE ===
+
+        $current_role = $_SESSION['role'] ?? 0;
+        $current_uid  = $_SESSION['admin_id'];
+
         $sql = "UPDATE products SET 
                     title = :title, price = :price, price_rent = :rent, 
                     type = :type, unit = :unit, thumb = :thumb, 
                     gallery = :gallery, status = :status, is_order = :is_order, 
                     private_note = :note 
                 WHERE id = :id";
+
+        // Nếu là CTV, thêm điều kiện chỉ được update bài của mình
+        if ($current_role == 0) {
+            $sql .= " AND user_id = :uid";
+        }
+
         $stmt = $conn->prepare($sql);
-        $stmt->execute([
+
+        $params = [
             ':title' => $title,
             ':price' => $price,
             ':rent' => $priceRent,
@@ -117,11 +128,19 @@ try {
             ':unit' => $unit,
             ':thumb' => $thumb,
             ':gallery' => $galleryJson,
-            ':status' => $status, // Lưu ý: Nếu form edit không gửi status thì cần check lại logic này ở form edit
-            ':is_order' => $isOrder, // [MỚI]
+            ':status' => $status,
+            ':is_order' => $isOrder,
             ':note' => $privateNote,
             ':id' => $id
-        ]);
+        ];
+
+        // Nếu là CTV thì thêm tham số :uid
+        if ($current_role == 0) {
+            $params[':uid'] = $current_uid;
+        }
+
+        $stmt->execute($params);
+
         $productId = $id;
         $msg = "updated";
     }

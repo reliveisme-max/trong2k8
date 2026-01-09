@@ -112,45 +112,45 @@ function renderProductCard($p, $viewMode)
 
     $isVip = ($p['is_featured'] == 1);
 ?>
-<div class="col-12 col-md-6 col-lg-4 feed-item-scroll">
-    <div class="product-card">
-        <a href="detail.php?id=<?= $p['id'] ?>" class="text-decoration-none">
-            <div class="product-thumb-box">
-                <?php if ($isVip): ?>
-                <span
-                    class="badge bg-danger position-absolute top-0 start-0 m-2 shadow-sm d-flex align-items-center gap-1"
-                    style="z-index:3; font-size:11px;">
-                    <i class="ph-fill ph-fire"></i> NỔI BẬT
-                </span>
-                <?php endif; ?>
-                <?= $badgeOrder ?>
-                <?= $badgeRent ?>
-                <img src="<?= $thumbUrl ?>" class="product-thumb" loading="lazy" alt="<?= $p['title'] ?>">
-            </div>
-        </a>
-        <div class="product-body">
-            <div class="d-flex align-items-center mb-2 gap-2">
-                <a href="detail.php?id=<?= $p['id'] ?>" class="text-decoration-none product-title m-0">
-                    Mã: <?= $p['title'] ?>
-                </a>
-                <button class="btn-copy-code" onclick="copyCode('<?= $p['title'] ?>')"><i class="ph-bold ph-copy"></i>
-                    Copy</button>
-            </div>
-            <div class="d-flex justify-content-between align-items-center small text-secondary">
-                <span><i class="ph-fill ph-clock"></i> <?= date('d/m/y', strtotime($p['created_at'])) ?></span>
-                <span><i class="ph-fill ph-eye"></i> <?= number_format($p['views']) ?></span>
-            </div>
-            <div class="product-meta">
-                <div class="price-tag">
-                    <span class="fw-normal text-secondary" style="font-size: 14px;">Giá:
-                    </span><?= formatPrice($displayPrice) ?>
-                    <small style="font-size:12px; font-weight:normal; color:#666"><?= $unitLabel ?></small>
+    <div class="col-12 col-md-6 col-lg-4 feed-item-scroll">
+        <div class="product-card">
+            <a href="detail.php?id=<?= $p['id'] ?>" class="text-decoration-none">
+                <div class="product-thumb-box">
+                    <?php if ($isVip): ?>
+                        <span
+                            class="badge bg-danger position-absolute top-0 start-0 m-2 shadow-sm d-flex align-items-center gap-1"
+                            style="z-index:3; font-size:11px;">
+                            <i class="ph-fill ph-fire"></i> NỔI BẬT
+                        </span>
+                    <?php endif; ?>
+                    <?= $badgeOrder ?>
+                    <?= $badgeRent ?>
+                    <img src="<?= $thumbUrl ?>" class="product-thumb" loading="lazy" alt="<?= $p['title'] ?>">
                 </div>
-                <a href="detail.php?id=<?= $p['id'] ?>" class="btn-detail text-decoration-none">CHI TIẾT</a>
+            </a>
+            <div class="product-body">
+                <div class="d-flex align-items-center mb-2 gap-2">
+                    <a href="detail.php?id=<?= $p['id'] ?>" class="text-decoration-none product-title m-0">
+                        Mã: <?= $p['title'] ?>
+                    </a>
+                    <button class="btn-copy-code" onclick="copyCode('<?= $p['title'] ?>')"><i class="ph-bold ph-copy"></i>
+                        Copy</button>
+                </div>
+                <div class="d-flex justify-content-between align-items-center small text-secondary">
+                    <span><i class="ph-fill ph-clock"></i> <?= date('d/m/y', strtotime($p['created_at'])) ?></span>
+                    <span><i class="ph-fill ph-eye"></i> <?= number_format($p['views']) ?></span>
+                </div>
+                <div class="product-meta">
+                    <div class="price-tag">
+                        <span class="fw-normal text-secondary" style="font-size: 14px;">Giá:
+                        </span><?= formatPrice($displayPrice) ?>
+                        <small style="font-size:12px; font-weight:normal; color:#666"><?= $unitLabel ?></small>
+                    </div>
+                    <a href="detail.php?id=<?= $p['id'] ?>" class="btn-detail text-decoration-none">CHI TIẾT</a>
+                </div>
             </div>
         </div>
     </div>
-</div>
 <?php
 }
 
@@ -168,9 +168,9 @@ require_once 'includes/header.php';
 ?>
 
 <script>
-window.totalPages = <?= $totalPages ?>;
-window.currentPage = <?= $page ?>;
-window.pageLimit = <?= $limit ?>;
+    window.totalPages = <?= $totalPages ?>;
+    window.currentPage = <?= $page ?>;
+    window.pageLimit = <?= $limit ?>;
 </script>
 
 <div class="container py-4">
@@ -189,10 +189,10 @@ window.pageLimit = <?= $limit ?>;
             <input type="text" name="q" class="search-input-modern" placeholder="Tìm kiếm tên acc, mã số, skin..."
                 value="<?= htmlspecialchars($keyword) ?>">
             <?php if (!empty($keyword)): ?>
-            <a href="?view=<?= $viewMode ?>" class="search-btn-modern text-white text-decoration-none"><i
-                    class="ph-bold ph-x"></i></a>
+                <a href="?view=<?= $viewMode ?>" class="search-btn-modern text-white text-decoration-none"><i
+                        class="ph-bold ph-x"></i></a>
             <?php else: ?>
-            <button type="submit" class="search-btn-modern"><i class="ph-bold ph-magnifying-glass"></i></button>
+                <button type="submit" class="search-btn-modern"><i class="ph-bold ph-magnifying-glass"></i></button>
             <?php endif; ?>
         </form>
     </div>
@@ -221,86 +221,86 @@ window.pageLimit = <?= $limit ?>;
             cả</a>
 
         <?php if ($viewMode == 'shop'): ?>
-        <a href="?view=shop&min=0&max=5000000" class="filter-pill <?= checkActive(0, 5000000) ?>">Dưới 5m</a>
-        <a href="?view=shop&min=5000000&max=10000000" class="filter-pill <?= checkActive(5000000, 10000000) ?>">5m -
-            10m</a>
-        <a href="?view=shop&min=10000000&max=20000000" class="filter-pill <?= checkActive(10000000, 20000000) ?>">10m -
-            20m</a>
-        <a href="?view=shop&min=20000000&max=40000000" class="filter-pill <?= checkActive(20000000, 40000000) ?>">20m -
-            40m</a>
-        <a href="?view=shop&min=40000000&max=60000000" class="filter-pill <?= checkActive(40000000, 60000000) ?>">40m -
-            60m</a>
-        <a href="?view=shop&min=60000000" class="filter-pill <?= checkActive(60000000, null) ?>">Trên 60m</a>
+            <a href="?view=shop&min=0&max=5000000" class="filter-pill <?= checkActive(0, 5000000) ?>">Dưới 5m</a>
+            <a href="?view=shop&min=5000000&max=10000000" class="filter-pill <?= checkActive(5000000, 10000000) ?>">5m -
+                10m</a>
+            <a href="?view=shop&min=10000000&max=20000000" class="filter-pill <?= checkActive(10000000, 20000000) ?>">10m -
+                20m</a>
+            <a href="?view=shop&min=20000000&max=40000000" class="filter-pill <?= checkActive(20000000, 40000000) ?>">20m -
+                40m</a>
+            <a href="?view=shop&min=40000000&max=60000000" class="filter-pill <?= checkActive(40000000, 60000000) ?>">40m -
+                60m</a>
+            <a href="?view=shop&min=60000000" class="filter-pill <?= checkActive(60000000, null) ?>">Trên 60m</a>
         <?php else: ?>
-        <a href="?view=rent&min=0&max=100000" class="filter-pill <?= checkActive(0, 100000) ?>">Dưới 100k</a>
-        <a href="?view=rent&min=100000&max=200000" class="filter-pill <?= checkActive(100000, 200000) ?>">100k -
-            200k</a>
-        <a href="?view=rent&min=200000&max=300000" class="filter-pill <?= checkActive(200000, 300000) ?>">200k -
-            300k</a>
-        <a href="?view=rent&min=300000&max=500000" class="filter-pill <?= checkActive(300000, 500000) ?>">300k -
-            500k</a>
-        <a href="?view=rent&min=500000" class="filter-pill <?= checkActive(500000, null) ?>">Trên 500k</a>
+            <a href="?view=rent&min=0&max=100000" class="filter-pill <?= checkActive(0, 100000) ?>">Dưới 100k</a>
+            <a href="?view=rent&min=100000&max=200000" class="filter-pill <?= checkActive(100000, 200000) ?>">100k -
+                200k</a>
+            <a href="?view=rent&min=200000&max=300000" class="filter-pill <?= checkActive(200000, 300000) ?>">200k -
+                300k</a>
+            <a href="?view=rent&min=300000&max=500000" class="filter-pill <?= checkActive(300000, 500000) ?>">300k -
+                500k</a>
+            <a href="?view=rent&min=500000" class="filter-pill <?= checkActive(500000, null) ?>">Trên 500k</a>
         <?php endif; ?>
     </div>
 
     <!-- GRID SẢN PHẨM -->
     <div class="row position-relative" id="productGrid" style="margin: 0 -12px;">
         <?php if (count($products) > 0): ?>
-        <?php foreach ($products as $p): renderProductCard($p, $viewMode);
+            <?php foreach ($products as $p): renderProductCard($p, $viewMode);
             endforeach; ?>
         <?php else: ?>
-        <div class="col-12 empty-state-box">
-            <div class="text-center">
-                <i class="ph-duotone ph-magnifying-glass text-secondary opacity-25" style="font-size: 80px;"></i>
-                <p class="text-secondary fw-bold mt-3 mb-4">Không tìm thấy Acc phù hợp!</p>
-                <a href="?view=<?= $viewMode ?>" class="btn btn-warning text-white rounded-pill px-4 fw-bold shadow-sm">
-                    <i class="ph-bold ph-arrow-counter-clockwise me-1"></i> Xem tất cả
-                </a>
+            <div class="col-12 empty-state-box">
+                <div class="text-center">
+                    <i class="ph-duotone ph-magnifying-glass text-secondary opacity-25" style="font-size: 80px;"></i>
+                    <p class="text-secondary fw-bold mt-3 mb-4">Không tìm thấy Acc phù hợp!</p>
+                    <a href="?view=<?= $viewMode ?>" class="btn btn-warning text-white rounded-pill px-4 fw-bold shadow-sm">
+                        <i class="ph-bold ph-arrow-counter-clockwise me-1"></i> Xem tất cả
+                    </a>
+                </div>
             </div>
-        </div>
         <?php endif; ?>
     </div>
 
     <?php if ($totalPages > 1): ?>
-    <div class="pagination-container-modern">
-        <div class="pagi-nav-btn js-prev-btn <?= ($page <= 1) ? 'disabled' : '' ?>"
-            onclick="<?= ($page > 1) ? "goToPage($page - 1)" : "" ?>"><i class="ph-bold ph-caret-left"></i></div>
-        <div class="position-relative">
-            <div class="pagi-main-btn" id="pagiTrigger" onclick="togglePaginationGrid()">
-                <span>Trang <span id="lblCurrentPage"><?= $page ?></span> / <?= $totalPages ?></span>
-                <i class="ph-bold ph-caret-up"></i>
-            </div>
-            <div class="pagi-dropdown" id="pagiDropdown">
-                <div class="pagi-grid-wrapper">
-                    <?php for ($i = 1; $i <= $totalPages; $i++): $isActive = ($i == $page) ? 'active' : ''; ?>
-                    <div class="pagi-num <?= $isActive ?>" onclick="goToPage(<?= $i ?>)" data-page="<?= $i ?>"><?= $i ?>
+        <div class="pagination-container-modern">
+            <div class="pagi-nav-btn js-prev-btn <?= ($page <= 1) ? 'disabled' : '' ?>"
+                onclick="<?= ($page > 1) ? "goToPage($page - 1)" : "" ?>"><i class="ph-bold ph-caret-left"></i></div>
+            <div class="position-relative">
+                <div class="pagi-main-btn" id="pagiTrigger" onclick="togglePaginationGrid()">
+                    <span>Trang <span id="lblCurrentPage"><?= $page ?></span> / <?= $totalPages ?></span>
+                    <i class="ph-bold ph-caret-up"></i>
+                </div>
+                <div class="pagi-dropdown" id="pagiDropdown">
+                    <div class="pagi-grid-wrapper">
+                        <?php for ($i = 1; $i <= $totalPages; $i++): $isActive = ($i == $page) ? 'active' : ''; ?>
+                            <div class="pagi-num <?= $isActive ?>" onclick="goToPage(<?= $i ?>)" data-page="<?= $i ?>"><?= $i ?>
+                            </div>
+                        <?php endfor; ?>
                     </div>
-                    <?php endfor; ?>
                 </div>
             </div>
+            <div class="pagi-nav-btn js-next-btn <?= ($page >= $totalPages) ? 'disabled' : '' ?>"
+                onclick="<?= ($page < $totalPages) ? "goToPage($page + 1)" : "" ?>"><i class="ph-bold ph-caret-right"></i>
+            </div>
         </div>
-        <div class="pagi-nav-btn js-next-btn <?= ($page >= $totalPages) ? 'disabled' : '' ?>"
-            onclick="<?= ($page < $totalPages) ? "goToPage($page + 1)" : "" ?>"><i class="ph-bold ph-caret-right"></i>
-        </div>
-    </div>
     <?php endif; ?>
 
 </div>
 
 <script>
-function copyCode(text) {
-    navigator.clipboard.writeText(text).then(function() {
-        Swal.fire({
-            toast: true,
-            position: 'top-end',
-            showConfirmButton: false,
-            timer: 1500,
-            timerProgressBar: true,
-            icon: 'success',
-            title: 'Đã sao chép!'
+    function copyCode(text) {
+        navigator.clipboard.writeText(text).then(function() {
+            Swal.fire({
+                toast: true,
+                position: 'top-end',
+                showConfirmButton: false,
+                timer: 1500,
+                timerProgressBar: true,
+                icon: 'success',
+                title: 'Đã sao chép!'
+            });
         });
-    });
-}
+    }
 </script>
 
 <?php require_once 'includes/footer.php'; ?>

@@ -9,7 +9,30 @@ if (!isset($_GET['id'])) {
     exit;
 }
 $id = (int)$_GET['id'];
+$current_role = $_SESSION['role'] ?? 0;
+$current_uid  = $_SESSION['admin_id'];
 
+// Lấy thông tin (CÓ CHECK QUYỀN)
+$sqlGet = "SELECT * FROM products WHERE id = :id";
+if ($current_role == 0) {
+    $sqlGet .= " AND user_id = :uid"; // CTV chỉ xem được bài mình
+}
+
+$stmt = $conn->prepare($sqlGet);
+
+if ($current_role == 0) {
+    $stmt->execute([':id' => $id, ':uid' => $current_uid]);
+} else {
+    $stmt->execute([':id' => $id]);
+}
+
+$product = $stmt->fetch();
+
+if (!$product) {
+    // Nếu không tìm thấy hoặc không phải chủ bài -> Đá về trang chủ
+    echo "<script>alert('Bạn không có quyền sửa Acc này!'); window.location.href='index.php';</script>";
+    exit;
+}
 // Lấy thông tin
 $product = $conn->prepare("SELECT * FROM products WHERE id = :id");
 $product->execute([':id' => $id]);
@@ -157,6 +180,10 @@ $gallery = json_decode($product['gallery'], true);
                         </div>
                         <input type="file" id="fileInput" name="gallery[]" accept="image/*" multiple hidden>
                         <div id="imageGrid" class="sortable-grid"></div>
+                        <div id="toggleGridBtn" class="btn-toggle-view d-none" onclick="toggleGrid()">
+                            <span id="toggleText">Xem thêm ảnh</span>
+                            <i class="ph-bold ph-caret-down ms-1"></i>
+                        </div>
                     </div>
 
                     <div class="form-card">
