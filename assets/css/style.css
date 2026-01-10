@@ -398,49 +398,206 @@ footer {
     float: left; /* QUAN TRỌNG: Để không bị lỗi layout với Masonry */
     margin-bottom: 30px;
 }
-/* --- DÁN VÀO CUỐI FILE STYLE.CSS --- */
+/* --- CSS CHO BỘ LỌC SẮP XẾP (SORTING) - FIXED V2 --- */
 
-.mobile-bottom-nav {
-    position: fixed; 
-    bottom: 0; 
-    left: 0; 
-    width: 100%;
-    height: auto; 
-    min-height: 60px;
-    background: #fff; 
-    border-top: 1px solid #eee;
-    display: flex; 
-    justify-content: space-around; 
-    align-items: flex-start; /* Căn lên trên để tránh thanh gạt iPhone */
-    padding-top: 8px;
-    padding-bottom: calc(10px + env(safe-area-inset-bottom));
-    z-index: 9999; /* Tăng z-index cao lên để đè lên mọi thứ */
-    box-shadow: 0 -2px 10px rgba(0,0,0,0.05);
-}
-
-.mobile-bottom-nav .nav-item {
-    display: flex; 
-    flex-direction: column; 
-    align-items: center; 
-    justify-content: center;
-    width: 25%; 
-    color: var(--accent); /* Màu xanh */
-    text-decoration: none; 
+/* 1. Nút Sắp Xếp trên PC */
+.sort-dropdown-pc {
+    position: relative;
+    background: #fff;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 8px 16px;
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--text-main);
     cursor: pointer;
-    font-size: 10px;
-    font-weight: 700;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    transition: all 0.2s;
+    min-width: 140px; /* Đủ rộng để hiện chữ Sắp xếp */
 }
 
-/* Style cho cái hộp ảnh */
-.mobile-bottom-nav .icon-box {
+.sort-dropdown-pc:hover {
+    border-color: var(--accent);
+    color: var(--accent);
+    box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+}
+
+.sort-dropdown-pc select {
+    position: absolute;
+    top: 0; left: 0; width: 100%; height: 100%;
+    opacity: 0; cursor: pointer;
+    font-size: 16px;
+}
+
+/* 2. Nút Chuyển Mua/Thuê (Mobile Fit Width) */
+.toggle-group {
+    background: #e4e6eb; 
+    padding: 4px; 
+    border-radius: 8px;
+    display: inline-flex; /* Quan trọng: Co lại theo nội dung */
+    width: auto; /* Không full 100% */
+}
+
+/* 3. Thanh công cụ Mobile */
+.mobile-tools-bar {
+    margin-bottom: 20px;
+    background: #fff;
+    padding: 8px 15px;
+    border-radius: 8px;
+    border: 1px solid var(--border);
+    box-shadow: 0 1px 2px rgba(0,0,0,0.03);
+    height: 44px; /* Chiều cao cố định cho đẹp */
+}
+
+/* Nút Sắp xếp Mobile (Giả lập nút bấm) */
+.sort-dropdown-mobile {
+    position: relative;
+    font-weight: 600;
+    font-size: 13px;
+    color: var(--text-main);
+    background: #f0f2f5; /* Nền xám nhẹ */
+    padding: 6px 12px;
+    border-radius: 20px; /* Bo tròn như nút */
+    display: flex;
+    align-items: center;
+    gap: 5px;
+}
+
+.sort-dropdown-mobile select {
+    position: absolute;
+    top: 0; left: 0; width: 100%; height: 100%;
+    opacity: 0;
+}
+/* ================================================= */
+/* 3. MENU ĐA NĂNG (FLOATING DOCK - MOBILE & PC)     */
+/* ================================================= */
+
+/* --- CẤU TRÚC CHUNG --- */
+.floating-menu-container {
+    position: fixed;
+    z-index: 9999;
+    background: rgba(255, 255, 255, 0.9); /* Nền trắng mờ */
+    backdrop-filter: blur(10px);          /* Hiệu ứng kính */
+    border: 1px solid rgba(255, 255, 255, 0.5);
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+    display: flex;
+    justify-content: space-around;
+    align-items: center;
+    transition: all 0.3s ease;
+}
+
+.float-item {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    text-decoration: none;
+    color: var(--text-sub);
+    position: relative;
+    cursor: pointer;
+    transition: all 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275); /* Hiệu ứng nảy */
+}
+
+.float-icon {
     width: 40px; 
     height: 40px;
-    margin-bottom: 2px;
+    display: flex; 
+    align-items: center; 
+    justify-content: center;
+    transition: transform 0.2s;
 }
 
-.mobile-bottom-nav .nav-item img {
+.float-icon img {
     width: 100%; 
     height: 100%; 
     object-fit: contain;
-    display: block;
+    filter: drop-shadow(0 2px 4px rgba(0,0,0,0.1));
+}
+
+/* Hiệu ứng Active (Đang chọn) */
+.float-item.active .float-icon {
+    transform: scale(1.15); /* Phóng to nhẹ */
+}
+.float-item.active .float-text {
+    color: var(--accent);
+    font-weight: 800;
+}
+
+/* --- GIAO DIỆN MOBILE & TABLET (< 1024px) --- */
+@media (max-width: 1023px) {
+    .floating-menu-container {
+        bottom: 20px;       /* Cách đáy 20px (Tạo cảm giác lơ lửng) */
+        left: 20px; 
+        right: 20px;        /* Cách 2 bên lề */
+        height: 70px;
+        border-radius: 20px; /* Bo tròn mạnh kiểu iOS */
+        padding: 0 10px;
+    }
+
+    .float-text {
+        font-size: 10px;
+        font-weight: 600;
+        margin-top: 4px;
+    }
+
+    /* Hiệu ứng Nhún khi bấm trên Mobile */
+    .float-item:active {
+        transform: scale(0.9);
+    }
+}
+
+/* --- GIAO DIỆN PC (> 1024px) --- */
+@media (min-width: 1024px) {
+    .floating-menu-container {
+        flex-direction: column; /* Xếp dọc */
+        top: 50%;
+        right: 20px;            /* Dính lề phải */
+        transform: translateY(-50%); /* Căn giữa dọc */
+        width: 70px;
+        height: auto;
+        padding: 20px 0;
+        border-radius: 35px;    /* Bo tròn thành hình viên thuốc dọc */
+        gap: 25px;              /* Khoảng cách giữa các icon */
+    }
+
+    .float-text {
+        position: absolute;
+        right: 70px;            /* Hiện bên trái icon */
+        background: var(--text-main);
+        color: #fff;
+        padding: 6px 12px;
+        border-radius: 6px;
+        font-size: 12px;
+        font-weight: 700;
+        white-space: nowrap;
+        opacity: 0;             /* Ẩn mặc định */
+        visibility: hidden;
+        transform: translateX(10px);
+        transition: all 0.3s ease;
+        box-shadow: 0 4px 10px rgba(0,0,0,0.15);
+    }
+
+    /* Tam giác chỉ vào icon */
+    .float-text::after {
+        content: '';
+        position: absolute;
+        top: 50%; right: -6px;
+        transform: translateY(-50%);
+        border-width: 6px 0 6px 6px;
+        border-style: solid;
+        border-color: transparent transparent transparent var(--text-main);
+    }
+
+    /* Hover vào icon thì hiện chữ */
+    .float-item:hover .float-text {
+        opacity: 1;
+        visibility: visible;
+        transform: translateX(0);
+    }
+
+    .float-item:hover .float-icon {
+        transform: scale(1.1);
+    }
 }
